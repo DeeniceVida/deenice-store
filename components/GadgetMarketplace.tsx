@@ -45,58 +45,58 @@ const GadgetMarketplace: React.FC<GadgetMarketplaceProps> = ({ gadgets, onOffer 
                 </div>
             </div>
 
-            <div className="container py-20">
+            <div className="container py-8 md:py-20 px-2 md:px-4">
                 {approvedGadgets.length === 0 ? (
-                    <div className="border-4 border-dashed border-black bg-white p-20 text-center">
+                    <div className="border-4 border-dashed border-black bg-white p-12 md:p-20 text-center">
                         <Smartphone size={64} className="mx-auto text-black mb-6" />
-                        <h3 className="text-3xl font-black uppercase mb-4">Market is Empty</h3>
+                        <h3 className="text-xl md:text-3xl font-black uppercase mb-4">Market is Empty</h3>
                         <p className="font-bold text-gray-500 mb-8">Be the first to list your gear for sale.</p>
-                        <a href="#/sell-gadget" className="confera-btn inline-flex">Start Selling Now &raquo;</a>
+                        <a href="#/sell-gadget" className="confera-btn inline-flex text-xs md:text-base">Start Selling Now &raquo;</a>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
                         {approvedGadgets.map(gadget => (
-                            <div key={gadget.id} className="border-2 border-black bg-white group transition-all hover:-translate-y-2 hover:shadow-[8px_8px_0_#000]">
-                                <div className="relative aspect-square border-b-2 border-black overflow-hidden bg-gray-100">
+                            <div key={gadget.id} className="border-[1.5px] md:border-2 border-black bg-white group transition-all hover:-translate-y-1 md:hover:-translate-y-2 hover:shadow-[4px_4px_0_#000] md:hover:shadow-[8px_8px_0_#000]">
+                                <div className="relative aspect-square border-b-[1.5px] md:border-b-2 border-black overflow-hidden bg-gray-100">
                                     <img
                                         src={gadget.images[0]}
                                         alt={gadget.deviceName}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                     />
-                                    <div className="absolute top-4 right-4 bg-black text-[#E3F77E] px-3 py-1 text-xs font-black uppercase tracking-widest">
+                                    <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-black text-[#E3F77E] px-2 py-0.5 md:px-3 md:py-1 text-[8px] md:text-xs font-black uppercase tracking-widest">
                                         {gadget.condition}
                                     </div>
-                                    <div className="absolute bottom-4 left-4 bg-white border-2 border-black px-3 py-1 text-xs font-black uppercase">
+                                    <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 bg-white border-[1.5px] md:border-2 border-black px-2 py-0.5 md:px-3 md:py-1 text-[10px] md:text-xs font-black uppercase">
                                         KES {gadget.price.toLocaleString()}
                                     </div>
                                 </div>
 
-                                <div className="p-6 space-y-4">
+                                <div className="p-3 md:p-6 space-y-2 md:space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <h3 className="font-black text-2xl uppercase leading-none mb-2">{gadget.deviceName}</h3>
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase">
-                                                <MapPin size={12} /> {gadget.location}
+                                            <h3 className="font-black text-sm md:text-2xl uppercase leading-tight mb-1">{gadget.deviceName}</h3>
+                                            <div className="flex items-center gap-1 text-[8px] md:text-xs font-bold text-gray-400 uppercase">
+                                                <MapPin size={10} /> {gadget.location}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="border-l-4 border-[#FF69B4] pl-4 py-2 font-bold text-sm italic bg-gray-50">
+                                    <div className="border-l-2 md:border-l-4 border-[#FF69B4] pl-2 md:pl-4 py-1 md:py-2 font-bold text-[10px] md:text-sm italic bg-gray-50 line-clamp-2">
                                         "{gadget.rfs}"
                                     </div>
 
-                                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-tighter text-gray-400">
-                                        <span>Seller: {gadget.sellerName}</span>
+                                    <div className="flex items-center gap-1 md:gap-2 text-[8px] md:text-xs font-black uppercase tracking-tighter text-gray-400">
+                                        <span>{gadget.sellerName}</span>
                                         <span>•</span>
-                                        <span>Used: {gadget.durationUsed}</span>
+                                        <span>{gadget.durationUsed}</span>
                                     </div>
 
                                     <button
                                         onClick={() => handleBuyRequest(gadget)}
-                                        className="confera-btn w-full text-sm py-4"
+                                        className="confera-btn w-full text-[10px] md:text-sm py-2 md:py-4 px-2 md:px-4"
                                     >
-                                        <Mail size={16} />
-                                        Interested to Buy
+                                        <Mail size={14} className="flex-shrink-0" />
+                                        <span>BUY</span>
                                     </button>
                                 </div>
                             </div>
@@ -104,7 +104,7 @@ const GadgetMarketplace: React.FC<GadgetMarketplaceProps> = ({ gadgets, onOffer 
                     </div>
                 )}
             </div>
-
+            阻
             <div className="confera-footer">
                 <p>Deenice.Store • Peer-to-Peer Verified • 2025</p>
             </div>

@@ -14,6 +14,8 @@ import {
   Sparkles,
   Coffee,
   Smartphone,
+  Globe,
+  Activity,
 } from 'lucide-react';
 import Hero from './components/Hero';
 import Shop from './components/Shop';
@@ -38,6 +40,16 @@ const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuLinkStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    fontSize: '1.5rem',
+    fontWeight: 900,
+    color: 'white',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '1px'
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -381,22 +393,50 @@ const App: React.FC = () => {
           </Routes>
         </main>
 
-        {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="icon-btn"><X size={32} /></button>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: '#000', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+              <img src={LOGO_URL} alt="Logo" style={{ height: '32px', filter: 'brightness(0) invert(1)' }} />
+              <button onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'white' }}><X size={32} /></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', fontSize: '2rem', fontWeight: 900, textTransform: 'uppercase' }}>
-              <Link to="/shop" onClick={() => setIsMobileMenuOpen(false)}>Shop</Link>
-              <Link to="/deals" onClick={() => setIsMobileMenuOpen(false)}>Hot Deals</Link>
-              <Link to="/sell-gadget" onClick={() => setIsMobileMenuOpen(false)}>Sell Gadget</Link>
-              <Link to="/market" onClick={() => setIsMobileMenuOpen(false)}>Market</Link>
-              <Link to="/buy-for-me" onClick={() => setIsMobileMenuOpen(false)}>Buy For Me</Link>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <Link to="/shop" onClick={() => setIsMobileMenuOpen(false)} style={mobileMenuLinkStyle}>
+                <ShoppingBag size={24} color="var(--color-accent)" />
+                <span>Shop</span>
+              </Link>
+              <Link to="/deals" onClick={() => setIsMobileMenuOpen(false)} style={mobileMenuLinkStyle}>
+                <Zap size={24} color="var(--color-accent)" fill="var(--color-accent)" />
+                <span>Hot Deals</span>
+              </Link>
+              <Link to="/sell-gadget" onClick={() => setIsMobileMenuOpen(false)} style={mobileMenuLinkStyle}>
+                <Smartphone size={24} color="var(--color-accent)" />
+                <span>Sell Gadget</span>
+              </Link>
+              <Link to="/market" onClick={() => setIsMobileMenuOpen(false)} style={mobileMenuLinkStyle}>
+                <Globe size={24} color="var(--color-accent)" />
+                <span>Market</span>
+              </Link>
+              <Link to="/buy-for-me" onClick={() => setIsMobileMenuOpen(false)} style={mobileMenuLinkStyle}>
+                <Activity size={24} color="var(--color-accent)" />
+                <span>Buy For Me</span>
+              </Link>
+              <Link to="/guides" onClick={() => setIsMobileMenuOpen(false)} style={mobileMenuLinkStyle}>
+                <ArrowRight size={24} color="var(--color-accent)" />
+                <span>Guides</span>
+              </Link>
+            </div>
+
+            <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1rem' }}>Support</p>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <a href={`https://wa.me/${WHATSAPP_NUMBER}`} style={{ color: 'white', fontWeight: 800 }}>WHATSAPP</a>
+                <a href={`mailto:${STORE_EMAIL}`} style={{ color: 'white', fontWeight: 800 }}>EMAIL</a>
+              </div>
             </div>
           </div>
         )}
-
+        阻
         <footer className="main-footer">
           <div className="footer-grid">
             <div className="footer-col">
