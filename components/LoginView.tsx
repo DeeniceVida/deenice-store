@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { User } from '../types';
-import { DELIVERY_ZONES, NAIROBI_DISTANCES } from '../constants';
+import { DELIVERY_ZONES, NAIROBI_DISTANCES, ADMIN_EMAIL, ADMIN_PASSWORD } from '../constants';
 
 interface LoginViewProps {
   onLogin: (user: User) => void;
@@ -33,16 +33,33 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Admin check
+    const isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD;
+    const isRegularUser = !isRegistering && password.length >= 4; // Simplified for demo, in real life we'd check DB
+
+    if (isAdmin) {
+      onLogin({
+        id: 'admin',
+        name: 'Admin',
+        email: ADMIN_EMAIL,
+        role: 'ADMIN',
+        hometown: 'Warehouse'
+      });
+      return;
+    }
+
     if (password.length < 4) {
       setLoginError(true);
       setTimeout(() => setLoginError(false), 2000);
       return;
     }
+
     onLogin({
       id: Math.random().toString(36).substr(2, 9),
       name: name || 'Demo User',
       email,
-      role: email.toLowerCase().includes('admin') ? 'ADMIN' : 'USER',
+      role: 'USER',
       hometown: hometown || 'Westlands'
     });
   };

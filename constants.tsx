@@ -10,6 +10,10 @@ export const USD_TO_KES_RATE = 135;
 export const LOGO_URL = "/assets/logo-full.png";
 export const LOGO_ICON_URL = "/assets/logo-icon.png";
 
+// Admin Credentials
+export const ADMIN_EMAIL = "deenicevida@gmail.com";
+export const ADMIN_PASSWORD = "admin"; // Highly recommended to change this after first login
+
 export const SOCIAL_LINKS = {
   tiktok: "https://www.tiktok.com/@deenicepcs",
   instagram: "https://www.instagram.com/deenicepcs/",
