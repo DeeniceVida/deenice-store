@@ -721,6 +721,86 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <textarea required placeholder="Detailed premium description..." rows={4} style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none', resize: 'none' }} value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
                      </div>
 
+                     <div style={{ border: '1.5px solid #000', padding: '1.5rem', borderRadius: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                           <h4 style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>Gallery Visuals (URLs)</h4>
+                           <button type="button" onClick={() => setNewProduct({ ...newProduct, images: [...(newProduct.images || []), ''] })} style={{ width: '2rem', height: '2rem', borderRadius: '8px', border: '1.5px solid #000', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={16} /></button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                           {newProduct.images?.map((img, idx) => (
+                              <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                 <input
+                                    placeholder="https://example.com/asset.jpg"
+                                    style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', border: '1.5px solid #000', fontSize: '0.75rem', fontWeight: 700 }}
+                                    value={img}
+                                    onChange={(e) => {
+                                       const updated = [...(newProduct.images || [])];
+                                       updated[idx] = e.target.value;
+                                       setNewProduct({ ...newProduct, images: updated });
+                                    }}
+                                 />
+                                 <button type="button" onClick={() => setNewProduct({ ...newProduct, images: newProduct.images?.filter((_, i) => i !== idx) })} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+
+                     <div style={{ border: '1.5px solid #000', padding: '1.5rem', borderRadius: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                           <h4 style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>Market Variations</h4>
+                           <button type="button" onClick={addVariationField} style={{ width: '2rem', height: '2rem', borderRadius: '8px', border: '1.5px solid #000', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={16} /></button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                           {newProduct.variations?.map((v, idx) => (
+                              <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 2fr auto', gap: '0.75rem', alignItems: 'center' }}>
+                                 <select
+                                    style={{ padding: '0.75rem', borderRadius: '8px', border: '1.5px solid #000', fontSize: '0.7rem', fontWeight: 800 }}
+                                    value={v.type}
+                                    onChange={(e) => {
+                                       const updated = [...(newProduct.variations || [])];
+                                       updated[idx].type = e.target.value as any;
+                                       setNewProduct({ ...newProduct, variations: updated });
+                                    }}
+                                 >
+                                    <option>Size</option><option>Design</option><option>Color</option><option>Bundle</option>
+                                 </select>
+                                 <input
+                                    placeholder="Value"
+                                    style={{ padding: '0.75rem', borderRadius: '8px', border: '1.5px solid #000', fontSize: '0.7rem', fontWeight: 700 }}
+                                    value={v.value}
+                                    onChange={(e) => {
+                                       const updated = [...(newProduct.variations || [])];
+                                       updated[idx].value = e.target.value;
+                                       setNewProduct({ ...newProduct, variations: updated });
+                                    }}
+                                 />
+                                 <input
+                                    placeholder="Price"
+                                    type="number"
+                                    style={{ padding: '0.75rem', borderRadius: '8px', border: '1.5px solid #000', fontSize: '0.7rem', fontWeight: 700 }}
+                                    value={v.price}
+                                    onChange={(e) => {
+                                       const updated = [...(newProduct.variations || [])];
+                                       updated[idx].price = Number(e.target.value);
+                                       setNewProduct({ ...newProduct, variations: updated });
+                                    }}
+                                 />
+                                 <input
+                                    placeholder="Spec. Image URL"
+                                    style={{ padding: '0.75rem', borderRadius: '8px', border: '1.5px solid #000', fontSize: '0.7rem', fontWeight: 700 }}
+                                    value={v.image || ''}
+                                    onChange={(e) => {
+                                       const updated = [...(newProduct.variations || [])];
+                                       updated[idx].image = e.target.value;
+                                       setNewProduct({ ...newProduct, variations: updated });
+                                    }}
+                                 />
+                                 <button type="button" onClick={() => setNewProduct({ ...newProduct, variations: newProduct.variations?.filter((_, i) => i !== idx) })} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+
                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div>
                            <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Price (KES)</label>
