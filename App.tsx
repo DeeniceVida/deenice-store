@@ -43,26 +43,40 @@ const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [adminProfile, setAdminProfile] = useState({ adminName: 'Andriano Darwin', adminAvatar: 'https://i.pravatar.cc/150?u=admin' });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prodData, orderData, gadgetData, offerData] = await Promise.all([
+        const [prodData, orderData, gadgetData, offerData, configData] = await Promise.all([
           db.getProducts(),
           db.getOrders(),
           db.getGadgetListings(),
-          db.getOffers()
+          db.getOffers(),
+          db.getStoreConfig()
         ]);
         setProducts(prodData);
         setOrders(orderData);
         setGadgets(gadgetData);
         setOffers(offerData);
+        if (configData) {
+          setAdminProfile({ adminName: configData.adminName, adminAvatar: configData.adminAvatar });
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
       }
     };
     fetchData();
   }, []);
+
+  const handleUpdateAdminProfile = async (name: string, avatar: string) => {
+    try {
+      await db.updateStoreConfig({ adminName: name, adminAvatar: avatar });
+      setAdminProfile({ adminName: name, adminAvatar: avatar });
+    } catch (err) {
+      console.error('Error updating admin profile:', err);
+    }
+  };
 
   const addToCart = (product: Product, color: string, qty: number, variation?: ProductVariation) => {
     setCart(prev => {
@@ -245,8 +259,9 @@ const App: React.FC = () => {
           </Link>
           <Link to="/guides">Guides</Link>
           {(user?.role === 'ADMIN' || user?.email === ADMIN_EMAIL) && (
-            <Link to="/admin" className="badge-outline">
-              <LayoutDashboard size={14} /> Admin
+            <Link to="/admin" className="badge-outline" style={{ gap: '8px', padding: '4px 12px 4px 4px' }}>
+              <img src={adminProfile.adminAvatar} style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} />
+              <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{adminProfile.adminName}</span>
             </Link>
           )}
         </div>
@@ -348,6 +363,9 @@ const App: React.FC = () => {
                 deals={deals}
                 gadgets={gadgets}
                 offers={offers}
+                adminName={adminProfile.adminName}
+                adminAvatar={adminProfile.adminAvatar}
+                onUpdateAdminProfile={handleUpdateAdminProfile}
                 onUpdateOrderStatus={handleUpdateOrderStatus}
                 onUpdatePaymentStatus={handleUpdatePaymentStatus}
                 onAddProduct={handleAddProduct}

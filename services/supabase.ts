@@ -11,7 +11,7 @@ export const getProducts = async (): Promise<Product[]> => {
     const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('createdAt', { ascending: false });
 
     if (error) throw error;
     return data as Product[];
@@ -32,7 +32,7 @@ export const getOrders = async (): Promise<Order[]> => {
     const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('createdAt', { ascending: false });
 
     if (error) throw error;
     return data as Order[];
@@ -49,11 +49,32 @@ export const createOrder = async (order: Order) => {
 };
 
 export const updateOrderStatus = async (id: string, status: string, type: 'order' | 'payment') => {
-    const updateField = type === 'order' ? { status } : { payment_status: status };
+    const updateField = type === 'order' ? { status } : { paymentStatus: status };
     const { error } = await supabase
         .from('orders')
         .update(updateField)
         .eq('id', id);
+
+    if (error) throw error;
+};
+
+// --- Store Config ---
+export const getStoreConfig = async () => {
+    const { data, error } = await supabase
+        .from('store_config')
+        .select('*')
+        .eq('id', 'main_config')
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+export const updateStoreConfig = async (config: { adminName: string, adminAvatar: string }) => {
+    const { error } = await supabase
+        .from('store_config')
+        .update(config)
+        .eq('id', 'main_config');
 
     if (error) throw error;
 };
@@ -63,7 +84,7 @@ export const getGadgetListings = async (): Promise<GadgetListing[]> => {
     const { data, error } = await supabase
         .from('gadget_listings')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('createdAt', { ascending: false });
 
     if (error) throw error;
     return data as GadgetListing[];
@@ -93,7 +114,7 @@ export const getOffers = async (): Promise<Offer[]> => {
     const { data, error } = await supabase
         .from('offers')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('createdAt', { ascending: false });
 
     if (error) throw error;
     return data as Offer[];

@@ -29,6 +29,9 @@ interface AdminDashboardProps {
    onAddProduct: (product: Product) => void;
    onUpdateProduct: (product: Product) => void;
    offers: Offer[];
+   adminName: string;
+   adminAvatar: string;
+   onUpdateAdminProfile: (name: string, avatar: string) => void;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -43,6 +46,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    onUpdateDeals,
    onUpdateGadgetStatus,
    onUpdateOfferStatus,
+   adminName,
+   adminAvatar,
+   onUpdateAdminProfile,
    offers
 }) => {
    const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'deals' | 'gadgets' | 'offers'>('dashboard');
@@ -53,9 +59,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    const [dealForm, setDealForm] = useState({ product: '', discountPrice: '', endDate: '' });
    const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
-   // Admin Profile State
-   const [adminName, setAdminName] = useState('Andriano Darwin');
-   const [adminAvatar, setAdminAvatar] = useState('https://i.pravatar.cc/150?u=admin');
+   // Admin Profile State (Local for editing, saved to DB)
+   const [tempAdminName, setTempAdminName] = useState(adminName);
+   const [tempAdminAvatar, setTempAdminAvatar] = useState(adminAvatar);
+
+   // Sync local temp state when props change
+   React.useEffect(() => {
+      setTempAdminName(adminName);
+      setTempAdminAvatar(adminAvatar);
+   }, [adminName, adminAvatar]);
 
    // Product Form State
    const [newProduct, setNewProduct] = useState<Partial<Product>>({
@@ -357,14 +369,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 700, fontStyle: 'italic', marginBottom: '2.5rem' }}>Admin Profile Identity</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
                      <div style={{ position: 'relative' }} className="group">
-                        <img src={adminAvatar} style={{ width: '6rem', height: '6rem', borderRadius: '50%', objectFit: 'cover', border: '4px solid rgba(179, 200, 239, 0.2)', boxShadow: 'var(--shadow-xl)' }} />
+                        <img src={tempAdminAvatar} style={{ width: '6rem', height: '6rem', borderRadius: '50%', objectFit: 'cover', border: '4px solid rgba(179, 200, 239, 0.2)', boxShadow: 'var(--shadow-xl)' }} />
                         <label style={{ position: 'absolute', bottom: 0, right: 0, background: 'black', color: 'white', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer' }}>
                            <Camera size={16} />
                            <input type="file" style={{ display: 'none' }} accept="image/*" onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
                                  const reader = new FileReader();
-                                 reader.onload = (re) => setAdminAvatar(re.target?.result as string);
+                                 reader.onload = (re) => setTempAdminAvatar(re.target?.result as string);
                                  reader.readAsDataURL(file);
                               }
                            }} />
@@ -377,10 +389,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <input
                                  type="text"
                                  style={{ flexGrow: 1, backgroundColor: '#f9fafb', borderRadius: '1rem', padding: '1rem', fontSize: '0.875rem', fontWeight: 700, border: 'none', outline: 'none' }}
-                                 value={adminName}
-                                 onChange={(e) => setAdminName(e.target.value)}
+                                 value={tempAdminName}
+                                 onChange={(e) => setTempAdminName(e.target.value)}
                               />
-                              <button className="confera-btn" style={{ padding: '0.75rem 1.5rem', fontSize: '0.75rem' }}>
+                              <button
+                                 onClick={() => onUpdateAdminProfile(tempAdminName, tempAdminAvatar)}
+                                 className="confera-btn"
+                                 style={{ padding: '0.75rem 1.5rem', fontSize: '0.75rem' }}
+                              >
                                  Update Identity
                               </button>
                            </div>
@@ -677,6 +693,51 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <button type="button" onClick={() => { setShowProductForm(false); setEditingProductId(null); }} style={{ padding: '0 2rem', borderRadius: '1rem', fontWeight: 700, backgroundColor: '#f3f4f6' }}>Cancel</button>
                      </div>
                   </form>
+               </div>
+            </div>
+         )}
+         {/* Shipping Label Modal */}
+         {selectedOrderForLabel && (
+            <div className="admin-modal-overlay">
+               <div className="admin-modal-backdrop" onClick={() => setSelectedOrderForLabel(null)} />
+               <div className="admin-modal-content" style={{ maxWidth: '400px', backgroundColor: 'white', padding: '40px', borderRadius: '0', position: 'relative' }}>
+                  <button onClick={() => setSelectedOrderForLabel(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                  <div id="shipping-label" style={{ border: '2px solid black', padding: '20px', backgroundColor: 'white', color: 'black', fontFamily: 'monospace' }}>
+                     <div style={{ borderBottom: '2px solid black', paddingBottom: '10px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontWeight: 900, fontSize: '1.5rem' }}>DEENICE</div>
+                        <div style={{ fontSize: '0.75rem' }}>ORD #{selectedOrderForLabel.id.toUpperCase()}</div>
+                     </div>
+
+                     <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#666' }}>Shipping To:</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 900, marginTop: '4px' }}>{selectedOrderForLabel.userId}</div>
+                        <div style={{ fontSize: '0.875rem', marginTop: '4px' }}>{selectedOrderForLabel.hometown}</div>
+                     </div>
+
+                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+                        <div>
+                           <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#666' }}>Total KES:</div>
+                           <div style={{ fontSize: '1rem', fontWeight: 900 }}>{selectedOrderForLabel.totalAmount.toLocaleString()}</div>
+                        </div>
+                        <div>
+                           <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#666' }}>Payment:</div>
+                           <div style={{ fontSize: '1rem', fontWeight: 900 }}>{selectedOrderForLabel.paymentStatus}</div>
+                        </div>
+                     </div>
+
+                     <div style={{ background: 'black', color: 'white', padding: '10px', textAlign: 'center', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.1em' }}>
+                        SCAN TO VERIFY
+                     </div>
+
+                     <div style={{ marginTop: '20px', height: '40px', background: 'repeating-linear-gradient(90deg, black, black 4px, transparent 4px, transparent 8px)' }} />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '20px' }}>
+                     <button onClick={() => window.print()} className="btn-primary" style={{ flexGrow: 1 }}>
+                        <Printer size={16} style={{ marginRight: '8px' }} /> Print Label
+                     </button>
+                     <button onClick={() => setSelectedOrderForLabel(null)} className="btn-outline">Close</button>
+                  </div>
                </div>
             </div>
          )}
