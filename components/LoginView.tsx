@@ -34,9 +34,11 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const submittedEmail = email.trim().toLowerCase();
+    const submittedPassword = password.trim();
+
     // Admin check
-    const isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD;
-    const isRegularUser = !isRegistering && password.length >= 4; // Simplified for demo, in real life we'd check DB
+    const isAdmin = submittedEmail === ADMIN_EMAIL.toLowerCase() && submittedPassword === ADMIN_PASSWORD;
 
     if (isAdmin) {
       onLogin({

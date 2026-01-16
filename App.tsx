@@ -29,7 +29,7 @@ import BuyMeCoffee from './components/BuyMeCoffee';
 import SellGadget from './components/SellGadget';
 import GadgetMarketplace from './components/GadgetMarketplace';
 import { CartItem, Product, ProductVariation, User, Order, OrderStatus, PaymentStatus, Deal, GadgetListing, Offer } from './types';
-import { STORE_NAME, WHATSAPP_NUMBER, SOCIAL_LINKS, STORE_EMAIL, LOGO_URL, LOGO_ICON_URL } from './constants';
+import { STORE_NAME, WHATSAPP_NUMBER, SOCIAL_LINKS, STORE_EMAIL, LOGO_URL, LOGO_ICON_URL, ADMIN_EMAIL } from './constants';
 import * as db from './services/supabase';
 
 const App: React.FC = () => {
@@ -244,7 +244,7 @@ const App: React.FC = () => {
             <Smartphone size={14} /> Market
           </Link>
           <Link to="/guides">Guides</Link>
-          {user?.role === 'ADMIN' && (
+          {(user?.role === 'ADMIN' || user?.email === ADMIN_EMAIL) && (
             <Link to="/admin" className="badge-outline">
               <LayoutDashboard size={14} /> Admin
             </Link>
@@ -278,6 +278,19 @@ const App: React.FC = () => {
           <Link to={user ? "/orders" : "/login"} className="icon-btn">
             {user ? <History size={20} /> : <UserIcon size={20} />}
           </Link>
+
+          {user && (
+            <button
+              onClick={() => {
+                setUser(null);
+                window.location.hash = '#/';
+              }}
+              className="icon-btn"
+              title="Logout"
+            >
+              <X size={20} />
+            </button>
+          )}
 
           <button
             onClick={() => setIsCartOpen(true)}
