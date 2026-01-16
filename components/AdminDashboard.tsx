@@ -524,87 +524,97 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="orders-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
                      {gadgets.length === 0 && <p className="text-gray-400">No gadgets pending approval.</p>}
                      {gadgets.map(gadget => (
-                        <div key={gadget.id} className="dashboard-card" style={{ display: 'grid', gridTemplateColumns: '120px 1fr min-content', gap: '2rem', alignItems: 'start', padding: '1.5rem', position: 'relative' }}>
-                           <img src={gadget.images[0]} style={{ width: '120px', height: '120px', borderRadius: '1rem', objectFit: 'cover' }} />
+                        <div key={gadget.id} className="dashboard-card" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', padding: '1.5rem', position: 'relative' }}>
+                           {/* Mobile-friendly Header with large status badge */}
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: '1rem' }}>
+                              <h4 style={{ fontWeight: 800, fontSize: '1.25rem' }}>{gadget.deviceName}</h4>
+                              <span className={`badge ${gadget.status === 'APPROVED' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`} style={{ padding: '6px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                                 {gadget.status}
+                              </span>
+                           </div>
 
-                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                 <h4 style={{ fontWeight: 800, fontSize: '1.25rem' }}>{gadget.deviceName}</h4>
-                                 <span className={`badge ${gadget.status === 'APPROVED' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`} style={{ padding: '4px 12px', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>
-                                    {gadget.status}
-                                 </span>
+                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '8px' }}>
+                              {gadget.images.map((img, idx) => (
+                                 <a key={idx} href={img} target="_blank" rel="noopener noreferrer">
+                                    <img src={img} style={{ width: '100%', aspectRatio: '1/1', borderRadius: '8px', objectFit: 'cover', border: '1px solid #eee' }} />
+                                 </a>
+                              ))}
+                              {/* Placeholder if less than 4 images (though validation now prevents this) */}
+                           </div>
+
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', fontSize: '0.8125rem', color: '#6b7280', background: '#f8fafc', padding: '1rem', borderRadius: '12px' }}>
+                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af' }}>Seller Details</span>
+                                    <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{gadget.sellerName} ({gadget.location})</span>
+                                 </div>
+                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af' }}>Asking Price</span>
+                                    <span style={{ fontWeight: 800, color: 'var(--color-primary-dark)', fontSize: '1rem' }}>KES {gadget.price.toLocaleString()}</span>
+                                 </div>
+                                 {gadget.batteryHealth && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                       <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#EF4444' }}>Battery Health</span>
+                                       <span style={{ fontWeight: 800, color: '#EF4444', fontSize: '1rem' }}>{gadget.batteryHealth}%</span>
+                                    </div>
+                                 )}
                               </div>
 
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.8125rem', color: '#6b7280' }}>
-                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Seller:</span> {gadget.sellerName}
-                                 </div>
-                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Location:</span> {gadget.location}
-                                 </div>
-                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>Price:</span> KES {gadget.price.toLocaleString()}
-                                 </div>
-                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Date:</span> {new Date(gadget.createdAt).toLocaleDateString()}
-                                 </div>
-                              </div>
-
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', background: '#f9fafb', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', background: 'white', padding: '1rem', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
                                  <div>
                                     <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Condition</span>
                                     <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.condition}</span>
                                  </div>
                                  <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Duration Used</span>
+                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Used For</span>
                                     <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.durationUsed}</span>
                                  </div>
                                  <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Reason for Selling</span>
+                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>RFS</span>
                                     <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.rfs}</span>
                                  </div>
                               </div>
 
-                              <div style={{ marginTop: '0.5rem' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem' }}>
                                  <a
                                     href={`https://wa.me/${gadget.phoneNumber}?text=Hi ${gadget.sellerName}, I'm the admin from Deenice Store regarding your ${gadget.deviceName} listing.`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="badge-outline"
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '99px', textDecoration: 'none', fontSize: '0.8125rem', fontWeight: 700, color: '#10B981', border: '1px solid #10B981', background: 'rgba(16, 185, 129, 0.05)' }}
+                                    style={{ flex: 1, minWidth: '200px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '12px 24px', borderRadius: '12px', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 800, color: '#10B981', border: '2px solid #10B981', background: 'white' }}
                                  >
-                                    <Smartphone size={14} /> Contact Seller via WhatsApp
+                                    <Smartphone size={18} /> Chat on WhatsApp
                                  </a>
-                              </div>
-                           </div>
 
-                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignSelf: 'center' }}>
-                              {gadget.status === 'PENDING' && (
-                                 <>
-                                    <button
-                                       onClick={() => onUpdateGadgetStatus(gadget.id, 'APPROVED')}
-                                       className="btn-primary"
-                                       style={{ height: '44px', padding: '0 1.5rem', backgroundColor: '#10B981', borderColor: '#10B981', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                                    >
-                                       Approve Now
-                                    </button>
-                                    <button
-                                       onClick={() => onUpdateGadgetStatus(gadget.id, 'REJECTED')}
-                                       className="btn-outline"
-                                       style={{ height: '44px', padding: '0 1.5rem', color: '#EF4444', borderColor: '#FECACA', background: '#FEF2F2', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                                    >
-                                       Reject
-                                    </button>
-                                 </>
-                              )}
-                              {gadget.status !== 'PENDING' && (
-                                 <button
-                                    onClick={() => onUpdateGadgetStatus(gadget.id, 'PENDING')}
-                                    style={{ fontSize: '0.75rem', textDecoration: 'underline', color: '#9ca3af', fontWeight: 700, border: 'none', background: 'none', cursor: 'pointer' }}
-                                 >
-                                    Reset to Pending
-                                 </button>
-                              )}
+                                 <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minWidth: '200px' }}>
+                                    {gadget.status === 'PENDING' && (
+                                       <>
+                                          <button
+                                             onClick={() => onUpdateGadgetStatus(gadget.id, 'APPROVED')}
+                                             className="btn-primary"
+                                             style={{ flex: 1, height: '48px', backgroundColor: '#10B981', borderColor: '#10B981', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}
+                                          >
+                                             Approve
+                                          </button>
+                                          <button
+                                             onClick={() => onUpdateGadgetStatus(gadget.id, 'REJECTED')}
+                                             className="btn-outline"
+                                             style={{ flex: 1, height: '48px', color: '#EF4444', borderColor: '#FECACA', background: '#FEF2F2', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}
+                                          >
+                                             Reject
+                                          </button>
+                                       </>
+                                    )}
+                                    {gadget.status !== 'PENDING' && (
+                                       <button
+                                          onClick={() => onUpdateGadgetStatus(gadget.id, 'PENDING')}
+                                          style={{ flex: 1, height: '48px', fontSize: '0.75rem', textDecoration: 'underline', color: '#9ca3af', fontWeight: 700, border: 'none', background: 'none' }}
+                                       >
+                                          Reset Status
+                                       </button>
+                                    )}
+                                 </div>
+                              </div>
                            </div>
                         </div>
                      ))}

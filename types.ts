@@ -103,6 +103,7 @@ export interface GadgetListing {
   phoneNumber: string;
   images: string[];
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  batteryHealth?: string;
   createdAt: string;
 }
 

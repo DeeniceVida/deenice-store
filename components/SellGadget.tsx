@@ -19,6 +19,7 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
         price: '',
         location: '',
         phoneNumber: '',
+        batteryHealth: '',
     });
     const [images, setImages] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,8 +55,21 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
 
     const { fee, payout } = calculateFees(Number(formData.price) || 0);
 
+    const isIphone = formData.deviceName.toLowerCase().includes('iphone');
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (images.length < 4) {
+            alert('Please upload at least 4 clear photos (Front, Back, Sides, and Screen) to proceed.');
+            return;
+        }
+
+        if (isIphone && !formData.batteryHealth) {
+            alert('Please specify the Battery Health percentage for your iPhone.');
+            return;
+        }
+
         setIsSubmitting(true);
 
         // 1. Submit to internal system (Admin Dashboard)
@@ -68,7 +82,8 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
                 price: Number(formData.price),
                 location: formData.location,
                 phoneNumber: formData.phoneNumber,
-                images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&q=80'],
+                images: images,
+                batteryHealth: isIphone ? formData.batteryHealth : undefined,
             });
 
             // 2. Trigger Email (Dual Submission)
@@ -210,6 +225,21 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
                             />
                         </div>
 
+                        {isIphone && (
+                            <div className="confera-input-group animate-slide-up">
+                                <label className="confera-label text-red-500">iPhone Battery Health (%)</label>
+                                <input
+                                    required
+                                    type="number"
+                                    className="confera-input"
+                                    placeholder="e.g. 87"
+                                    value={formData.batteryHealth}
+                                    onChange={(e) => setFormData({ ...formData, batteryHealth: e.target.value })}
+                                    style={{ borderColor: 'var(--color-primary)' }}
+                                />
+                            </div>
+                        )}
+
                         <div className="mb-8 border-b-4 border-black pb-4 mt-8">
                             <h2 className="text-2xl font-black uppercase flex items-center gap-2">
                                 <span className="bg-black text-white w-8 h-8 flex items-center justify-center rounded-full text-sm">2</span>
@@ -241,45 +271,43 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
                             </div>
                         </div>
 
-                        <div className="confera-input-group">
-                            <label className="confera-label">Photos of Device</label>
-                            <div className="border-4 border-dashed border-black bg-white p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors relative">
-                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} />
-                                <Upload className="mx-auto mb-2" />
-                                <span className="font-bold uppercase">Click to Upload Evidence</span>
-                            </div>
-                            {images.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
-                                    {images.map((img, i) => (
-                                        <div key={i} style={{ position: 'relative', width: '48px', height: '48px', border: '1px solid black', overflow: 'hidden' }}>
-                                            <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            <button
-                                                type="button"
-                                                onClick={() => setImages(images.filter((_, index) => index !== i))}
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: '-4px',
-                                                    right: '-4px',
-                                                    background: 'black',
-                                                    color: 'white',
-                                                    width: '16px',
-                                                    height: '16px',
-                                                    display: 'flex',
-                                                    itemsCenter: 'center',
-                                                    justifyContent: 'center',
-                                                    borderRadius: '50%',
-                                                    fontSize: '10px',
-                                                    cursor: 'pointer',
-                                                    border: 'none'
-                                                }}
-                                            >
-                                                ×
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                        <div className="border-4 border-dashed border-black bg-white p-6 md:p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors relative">
+                            <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} />
+                            <Upload className="mx-auto mb-2" />
+                            <span className="font-bold uppercase text-sm md:text-base">Upload Evidence (Min 4 Photos)</span>
+                            <p className="text-[10px] md:text-xs mt-2 text-gray-500">Front • Back • Sides • Screen</p>
                         </div>
+                        {images.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
+                                {images.map((img, i) => (
+                                    <div key={i} style={{ position: 'relative', width: '48px', height: '48px', border: '1px solid black', overflow: 'hidden' }}>
+                                        <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <button
+                                            type="button"
+                                            onClick={() => setImages(images.filter((_, index) => index !== i))}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '-4px',
+                                                right: '-4px',
+                                                background: 'black',
+                                                color: 'white',
+                                                width: '16px',
+                                                height: '16px',
+                                                display: 'flex',
+                                                itemsCenter: 'center',
+                                                justifyContent: 'center',
+                                                borderRadius: '50%',
+                                                fontSize: '10px',
+                                                cursor: 'pointer',
+                                                border: 'none'
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         <button disabled={isSubmitting} className="confera-btn w-full mt-4">
                             {isSubmitting ? <Loader className="animate-spin" /> : <>Send for Verification <ArrowRightIcon /></>}
