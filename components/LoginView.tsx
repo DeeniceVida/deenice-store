@@ -200,7 +200,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               <Mail className="form-icon" size={20} />
               <input
                 type="email"
-                placeholder="Email (use 'admin' for dashboard)"
+                placeholder="Email"
                 required
                 onFocus={() => setFocusField('email')}
                 onBlur={() => setFocusField(null)}
