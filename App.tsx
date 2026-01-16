@@ -323,7 +323,10 @@ const App: React.FC = () => {
             <Route path="/buy-for-me" element={<BuyForMe />} />
             <Route path="/sell-gadget" element={<SellGadget user={user} onSubmit={handleSellGadget} />} />
             <Route path="/market" element={<GadgetMarketplace gadgets={gadgets} onOffer={handleCreateOffer} />} />
-            <Route path="/login" element={<LoginView onLogin={(u) => { setUser(u); window.location.hash = '#/'; }} />} />
+            <Route path="/login" element={<LoginView onLogin={(u) => {
+              setUser(u);
+              window.location.hash = u.role === 'ADMIN' ? '#/admin' : '#/';
+            }} />} />
             <Route path="/admin/*" element={
               <AdminDashboard
                 products={products}
