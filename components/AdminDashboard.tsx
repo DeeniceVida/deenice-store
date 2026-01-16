@@ -524,57 +524,86 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="orders-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
                      {gadgets.length === 0 && <p className="text-gray-400">No gadgets pending approval.</p>}
                      {gadgets.map(gadget => (
-                        <div key={gadget.id} className="stat-card" style={{ display: 'grid', gridTemplateColumns: 'min-content 1fr min-content', gap: '2rem', alignItems: 'center', background: 'white', padding: '20px', borderRadius: '16px' }}>
-                           <img src={gadget.images[0]} style={{ width: '100px', height: '100px', borderRadius: '12px', objectFit: 'cover' }} />
+                        <div key={gadget.id} className="dashboard-card" style={{ display: 'grid', gridTemplateColumns: '120px 1fr min-content', gap: '2rem', alignItems: 'start', padding: '1.5rem', position: 'relative' }}>
+                           <img src={gadget.images[0]} style={{ width: '120px', height: '120px', borderRadius: '1rem', objectFit: 'cover' }} />
 
-                           <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                                 <h4 style={{ fontWeight: 700, fontSize: '1.25rem' }}>{gadget.deviceName}</h4>
-                                 <span className={`badge ${gadget.status === 'APPROVED' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`} style={{ padding: '4px 12px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 700 }}>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                 <h4 style={{ fontWeight: 800, fontSize: '1.25rem' }}>{gadget.deviceName}</h4>
+                                 <span className={`badge ${gadget.status === 'APPROVED' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`} style={{ padding: '4px 12px', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>
                                     {gadget.status}
                                  </span>
                               </div>
-                              <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '1rem' }}>
-                                 Seller: <span style={{ fontWeight: 700, color: 'black' }}>{gadget.sellerName}</span> • Loc: {gadget.location} • Price: <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>KES {gadget.price.toLocaleString()}</span>
-                              </p>
 
-                              <div style={{ display: 'flex', gap: '2rem', fontSize: '0.875rem', color: '#4b5563', background: '#f9fafb', padding: '1rem', borderRadius: '12px' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.8125rem', color: '#6b7280' }}>
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Seller:</span> {gadget.sellerName}
+                                 </div>
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Location:</span> {gadget.location}
+                                 </div>
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>Price:</span> KES {gadget.price.toLocaleString()}
+                                 </div>
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Date:</span> {new Date(gadget.createdAt).toLocaleDateString()}
+                                 </div>
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', background: '#f9fafb', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.03)' }}>
                                  <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af' }}>Condition</span>
-                                    {gadget.condition}
+                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Condition</span>
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.condition}</span>
                                  </div>
                                  <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af' }}>Duration</span>
-                                    {gadget.durationUsed}
+                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Duration Used</span>
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.durationUsed}</span>
                                  </div>
                                  <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af' }}>RFS</span>
-                                    {gadget.rfs}
+                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Reason for Selling</span>
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.rfs}</span>
                                  </div>
+                              </div>
+
+                              <div style={{ marginTop: '0.5rem' }}>
+                                 <a
+                                    href={`https://wa.me/${gadget.phoneNumber}?text=Hi ${gadget.sellerName}, I'm the admin from Deenice Store regarding your ${gadget.deviceName} listing.`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="badge-outline"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '99px', textDecoration: 'none', fontSize: '0.8125rem', fontWeight: 700, color: '#10B981', border: '1px solid #10B981', background: 'rgba(16, 185, 129, 0.05)' }}
+                                 >
+                                    <Smartphone size={14} /> Contact Seller via WhatsApp
+                                 </a>
                               </div>
                            </div>
 
-                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignSelf: 'center' }}>
                               {gadget.status === 'PENDING' && (
                                  <>
                                     <button
                                        onClick={() => onUpdateGadgetStatus(gadget.id, 'APPROVED')}
                                        className="btn-primary"
-                                       style={{ justifyContent: 'center', backgroundColor: '#10B981', borderColor: '#10B981' }}
+                                       style={{ height: '44px', padding: '0 1.5rem', backgroundColor: '#10B981', borderColor: '#10B981', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
                                     >
-                                       Approve Listing
+                                       Approve Now
                                     </button>
                                     <button
                                        onClick={() => onUpdateGadgetStatus(gadget.id, 'REJECTED')}
                                        className="btn-outline"
-                                       style={{ justifyContent: 'center', color: '#EF4444', borderColor: '#FECACA', background: '#FEF2F2' }}
+                                       style={{ height: '44px', padding: '0 1.5rem', color: '#EF4444', borderColor: '#FECACA', background: '#FEF2F2', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
                                     >
                                        Reject
                                     </button>
                                  </>
                               )}
                               {gadget.status !== 'PENDING' && (
-                                 <button onClick={() => onUpdateGadgetStatus(gadget.id, 'PENDING')} style={{ fontSize: '0.75rem', textDecoration: 'underline', color: '#9ca3af' }}>Reset Status</button>
+                                 <button
+                                    onClick={() => onUpdateGadgetStatus(gadget.id, 'PENDING')}
+                                    style={{ fontSize: '0.75rem', textDecoration: 'underline', color: '#9ca3af', fontWeight: 700, border: 'none', background: 'none', cursor: 'pointer' }}
+                                 >
+                                    Reset to Pending
+                                 </button>
                               )}
                            </div>
                         </div>
