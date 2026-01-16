@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Deenice.store",
+  "description": "A premium tech e-commerce platform specializing in direct imports and curated tech gear from Instagram, TikTok, and YouTube.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
