@@ -20,8 +20,12 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
         location: '',
         phoneNumber: '',
         batteryHealth: '',
+        storage: '',
+        ram: '',
+        color: '',
     });
     const [images, setImages] = useState<string[]>([]);
+    const [proofOfPurchase, setProofOfPurchase] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -42,6 +46,13 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
         if (e.target.files && e.target.files[0]) {
             const url = URL.createObjectURL(e.target.files[0]);
             setImages([...images, url]);
+        }
+    };
+
+    const handleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const url = URL.createObjectURL(e.target.files[0]);
+            setProofOfPurchase(url);
         }
     };
 
@@ -70,6 +81,11 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
             return;
         }
 
+        if (!proofOfPurchase) {
+            alert('Please upload a Proof of Purchase (Receipt or Certificate) for verification.');
+            return;
+        }
+
         setIsSubmitting(true);
 
         // 1. Submit to internal system (Admin Dashboard)
@@ -84,11 +100,15 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
                 phoneNumber: formData.phoneNumber,
                 images: images,
                 batteryHealth: isIphone ? formData.batteryHealth : undefined,
+                storage: formData.storage,
+                ram: formData.ram,
+                color: formData.color,
+                proofOfPurchase: proofOfPurchase,
             });
 
             // 2. Trigger Email (Dual Submission)
             const subject = `Gadget Listing Request: ${formData.deviceName} - ${user.name}`;
-            const body = `Hello Admin,\n\nI would like to list my ${formData.deviceName} for sale.\n\nDetails:\n- Price: KES ${formData.price}\n- Condition: ${formData.condition}\n- Duration Used: ${formData.durationUsed}\n- Reason for Selling: ${formData.rfs}\n- Location: ${formData.location}\n- Phone: ${formData.phoneNumber}\n\nPlease review my listing in the dashboard.\n\nThanks,\n${user.name}`;
+            const body = `Hello Admin,\n\nI would like to list my ${formData.deviceName} for sale.\n\nDetails:\n- Price: KES ${formData.price}\n- Condition: ${formData.condition}\n- Duration Used: ${formData.durationUsed}\n- Specs: ${formData.storage} Store, ${formData.ram} RAM, ${formData.color} Color\n${isIphone ? `- Battery Health: ${formData.batteryHealth}%\n` : ''}- Reason for Selling: ${formData.rfs}\n- Location: ${formData.location}\n- Phone: ${formData.phoneNumber}\n\nPlease review my listing and Proof of Purchase in the dashboard.\n\nThanks,\n${user.name}`;
 
             // Open mail client
             window.location.href = `mailto:${STORE_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -182,6 +202,39 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
 
                         <div className="confera-grid">
                             <div className="confera-input-group">
+                                <label className="confera-label">Storage</label>
+                                <input
+                                    required
+                                    className="confera-input"
+                                    placeholder="e.g. 256GB"
+                                    value={formData.storage}
+                                    onChange={(e) => setFormData({ ...formData, storage: e.target.value })}
+                                />
+                            </div>
+                            <div className="confera-input-group">
+                                <label className="confera-label">RAM</label>
+                                <input
+                                    required
+                                    className="confera-input"
+                                    placeholder="e.g. 8GB"
+                                    value={formData.ram}
+                                    onChange={(e) => setFormData({ ...formData, ram: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="confera-grid">
+                            <div className="confera-input-group">
+                                <label className="confera-label">Color</label>
+                                <input
+                                    required
+                                    className="confera-input"
+                                    placeholder="e.g. Midnight Black"
+                                    value={formData.color}
+                                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                                />
+                            </div>
+                            <div className="confera-input-group">
                                 <label className="confera-label">Condition</label>
                                 <select
                                     className="confera-input"
@@ -194,23 +247,24 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
                                     <option>Fair</option>
                                 </select>
                             </div>
-                            <div className="confera-input-group">
-                                <label className="confera-label">Asking Price (KES)</label>
-                                <input
-                                    required
-                                    type="number"
-                                    className="confera-input"
-                                    placeholder="000"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                />
-                                {Number(formData.price) > 0 && (
-                                    <div className="mt-2 bg-black text-white p-2 text-sm font-bold flex justify-between">
-                                        <span>Payout: KES {payout.toLocaleString()}</span>
-                                        <span className="text-gray-400"> (Fee: {fee.toLocaleString()})</span>
-                                    </div>
-                                )}
-                            </div>
+                        </div>
+
+                        <div className="confera-input-group">
+                            <label className="confera-label">Asking Price (KES)</label>
+                            <input
+                                required
+                                type="number"
+                                className="confera-input"
+                                placeholder="000"
+                                value={formData.price}
+                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                            />
+                            {Number(formData.price) > 0 && (
+                                <div className="mt-2 bg-black text-white p-2 text-sm font-bold flex justify-between">
+                                    <span>Payout: KES {payout.toLocaleString()}</span>
+                                    <span className="text-gray-400"> (Fee: {fee.toLocaleString()})</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="confera-input-group">
@@ -271,43 +325,80 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
                             </div>
                         </div>
 
-                        <div className="border-4 border-dashed border-black bg-white p-6 md:p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors relative">
-                            <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} />
-                            <Upload className="mx-auto mb-2" />
-                            <span className="font-bold uppercase text-sm md:text-base">Upload Evidence (Min 4 Photos)</span>
-                            <p className="text-[10px] md:text-xs mt-2 text-gray-500">Front • Back • Sides • Screen</p>
-                        </div>
-                        {images.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
-                                {images.map((img, i) => (
-                                    <div key={i} style={{ position: 'relative', width: '48px', height: '48px', border: '1px solid black', overflow: 'hidden' }}>
-                                        <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div className="confera-grid" style={{ marginTop: '2rem' }}>
+                            <div className="confera-input-group">
+                                <label className="confera-label">Photos of Device</label>
+                                <div className="border-4 border-dashed border-black bg-white p-6 md:p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors relative">
+                                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageUpload} />
+                                    <Upload className="mx-auto mb-2" />
+                                    <span className="font-bold uppercase text-sm md:text-base">Upload Evidence (Min 4 Photos)</span>
+                                    <p className="text-[10px] md:text-xs mt-2 text-gray-500">Front • Back • Sides • Screen</p>
+                                </div>
+                                {images.length > 0 && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
+                                        {images.map((img, i) => (
+                                            <div key={i} style={{ position: 'relative', width: '48px', height: '48px', border: '1px solid black', overflow: 'hidden' }}>
+                                                <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setImages(images.filter((_, index) => index !== i))}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '-4px',
+                                                        right: '-4px',
+                                                        background: 'black',
+                                                        color: 'white',
+                                                        width: '16px',
+                                                        height: '16px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        borderRadius: '50%',
+                                                        fontSize: '10px',
+                                                        cursor: 'pointer',
+                                                        border: 'none'
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="confera-input-group">
+                                <label className="confera-label">Proof of Purchase (Receipt/Certificate)</label>
+                                <div className="border-4 border-dashed border-black bg-white p-6 md:p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors relative" style={{ height: 'min-content' }}>
+                                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleProofUpload} />
+                                    <Camera className="mx-auto mb-2" />
+                                    <span className="font-bold uppercase text-sm md:text-base">Upload Proof</span>
+                                </div>
+                                {proofOfPurchase && (
+                                    <div style={{ position: 'relative', width: '100%', height: '120px', border: '1px solid black', overflow: 'hidden', marginTop: '16px' }}>
+                                        <img src={proofOfPurchase} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         <button
                                             type="button"
-                                            onClick={() => setImages(images.filter((_, index) => index !== i))}
+                                            onClick={() => setProofOfPurchase(null)}
                                             style={{
                                                 position: 'absolute',
-                                                top: '-4px',
-                                                right: '-4px',
+                                                top: '4px',
+                                                right: '4px',
                                                 background: 'black',
                                                 color: 'white',
-                                                width: '16px',
-                                                height: '16px',
-                                                display: 'flex',
-                                                itemsCenter: 'center',
-                                                justifyContent: 'center',
-                                                borderRadius: '50%',
-                                                fontSize: '10px',
+                                                padding: '4px 8px',
+                                                fontSize: '12px',
                                                 cursor: 'pointer',
-                                                border: 'none'
+                                                border: 'none',
+                                                fontWeight: 900
                                             }}
                                         >
-                                            ×
+                                            REMOVE
                                         </button>
                                     </div>
-                                ))}
+                                )}
                             </div>
-                        )}
+                        </div>
 
                         <button disabled={isSubmitting} className="confera-btn w-full mt-4">
                             {isSubmitting ? <Loader className="animate-spin" /> : <>Send for Verification <ArrowRightIcon /></>}

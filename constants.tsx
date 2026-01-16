@@ -12,7 +12,7 @@ export const LOGO_ICON_URL = "/assets/logo-icon.png";
 
 // Admin Credentials
 export const ADMIN_EMAIL = "deenicevida@gmail.com";
-export const ADMIN_PASSWORD = "admin"; // Highly recommended to change this after first login
+export const ADMIN_PASSWORD = "dmcxstn7"; // Highly recommended to change this after first login
 
 export const SOCIAL_LINKS = {
   tiktok: "https://www.tiktok.com/@deenicepcs",

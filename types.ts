@@ -104,6 +104,10 @@ export interface GadgetListing {
   images: string[];
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   batteryHealth?: string;
+  storage?: string;
+  ram?: string;
+  color?: string;
+  proofOfPurchase?: string;
   createdAt: string;
 }
 

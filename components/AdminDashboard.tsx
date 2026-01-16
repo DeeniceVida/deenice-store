@@ -539,28 +539,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                     <img src={img} style={{ width: '100%', aspectRatio: '1/1', borderRadius: '8px', objectFit: 'cover', border: '1px solid #eee' }} />
                                  </a>
                               ))}
-                              {/* Placeholder if less than 4 images (though validation now prevents this) */}
+                              {gadget.proofOfPurchase && (
+                                 <a href={gadget.proofOfPurchase} target="_blank" rel="noopener noreferrer" style={{ position: 'relative' }}>
+                                    <img src={gadget.proofOfPurchase} style={{ width: '100%', aspectRatio: '1/1', borderRadius: '8px', objectFit: 'cover', border: '2px solid #000' }} />
+                                    <span style={{ position: 'absolute', bottom: '0', left: '0', right: '0', background: 'rgba(0,0,0,0.8)', color: 'white', fontSize: '8px', padding: '2px', textAlign: 'center', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px', fontWeight: 900 }}>PROOF</span>
+                                 </a>
+                              )}
                            </div>
 
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', fontSize: '0.8125rem', color: '#6b7280', background: '#f8fafc', padding: '1rem', borderRadius: '12px' }}>
                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af' }}>Seller Details</span>
+                                    <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af' }}>Seller</span>
                                     <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{gadget.sellerName} ({gadget.location})</span>
                                  </div>
                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af' }}>Asking Price</span>
+                                    <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af' }}>Price</span>
                                     <span style={{ fontWeight: 800, color: 'var(--color-primary-dark)', fontSize: '1rem' }}>KES {gadget.price.toLocaleString()}</span>
                                  </div>
                                  {gadget.batteryHealth && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                       <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#EF4444' }}>Battery Health</span>
+                                       <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#EF4444' }}>Battery</span>
                                        <span style={{ fontWeight: 800, color: '#EF4444', fontSize: '1rem' }}>{gadget.batteryHealth}%</span>
                                     </div>
                                  )}
                               </div>
 
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', background: 'white', padding: '1rem', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '1rem', background: 'white', padding: '1rem', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
                                  <div>
                                     <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Condition</span>
                                     <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.condition}</span>
@@ -570,6 +575,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                     <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.durationUsed}</span>
                                  </div>
                                  <div>
+                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Storage / RAM</span>
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.storage} / {gadget.ram}</span>
+                                 </div>
+                                 <div>
+                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Color</span>
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.color}</span>
+                                 </div>
+                                 <div style={{ gridColumn: '1 / -1' }}>
                                     <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>RFS</span>
                                     <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.rfs}</span>
                                  </div>
