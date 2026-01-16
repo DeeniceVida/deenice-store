@@ -247,7 +247,7 @@ const App: React.FC = () => {
         </Link>
 
         {/* Desktop Menu */}
-        <div className="nav-links" style={{ display: isMobileMenuOpen ? 'none' : 'flex' }}>
+        <div className="nav-links" style={{ display: isMobileMenuOpen ? 'none' : 'flex', alignItems: 'center' }}>
           <Link to="/shop">Shop</Link>
           <Link to="/deals" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Zap size={14} style={{ color: 'var(--color-accent)', fill: 'var(--color-accent)' }} /> Hot Deals
@@ -259,9 +259,9 @@ const App: React.FC = () => {
           </Link>
           <Link to="/guides">Guides</Link>
           {(user?.role === 'ADMIN' || user?.email === ADMIN_EMAIL) && (
-            <Link to="/admin" className="badge-outline" style={{ gap: '8px', padding: '4px 12px 4px 4px' }}>
-              <img src={adminProfile.adminAvatar} style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} />
-              <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{adminProfile.adminName}</span>
+            <Link to="/admin" className="badge-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px 4px 4px', borderRadius: '999px', border: '1px solid rgba(0,0,0,0.1)', background: 'white' }}>
+              <img src={adminProfile.adminAvatar} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)' }}>{adminProfile.adminName}</span>
             </Link>
           )}
         </div>
