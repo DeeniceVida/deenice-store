@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Product } from "../types";
 
 // Initialize Gemini
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || (window as any).GEMINI_API_KEY || '';
+const API_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY || (window as any).GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export const getSmartRecommendations = async (

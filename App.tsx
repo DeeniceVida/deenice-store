@@ -60,17 +60,19 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prodData, orderData, gadgetData, offerData, configData] = await Promise.all([
+        const [prodData, orderData, gadgetData, offerData, configData, dealData] = await Promise.all([
           db.getProducts(),
           db.getOrders(),
           db.getGadgetListings(),
           db.getOffers(),
-          db.getStoreConfig()
+          db.getStoreConfig(),
+          db.getDeals()
         ]);
         setProducts(prodData);
         setOrders(orderData);
         setGadgets(gadgetData);
         setOffers(offerData);
+        setDeals(dealData || []);
         if (configData) {
           setAdminProfile({ adminName: configData.adminName, adminAvatar: configData.adminAvatar });
         }
@@ -173,8 +175,28 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateDeals = (updatedDeals: Deal[]) => {
-    setDeals(updatedDeals);
+  const handleUpdateDeals = async (updatedDeals: Deal[]) => {
+    try {
+      // Find new or changed deals and save them
+      const existingIds = deals.map(d => d.id);
+      const changedOrNew = updatedDeals.filter(d => !existingIds.includes(d.id) || JSON.stringify(d) !== JSON.stringify(deals.find(ex => ex.id === d.id)));
+
+      for (const deal of changedOrNew) {
+        await db.saveDeal(deal);
+      }
+      setDeals(updatedDeals);
+    } catch (err) {
+      console.error('Error updating deals:', err);
+    }
+  };
+
+  const handleDeleteDeal = async (id: string) => {
+    try {
+      await db.deleteDeal(id);
+      setDeals(prev => prev.filter(d => d.id !== id));
+    } catch (err) {
+      console.error('Error deleting deal:', err);
+    }
   };
 
   const handleAddProduct = async (newProduct: Product) => {
@@ -382,7 +404,8 @@ const App: React.FC = () => {
                 onUpdatePaymentStatus={handleUpdatePaymentStatus}
                 onAddProduct={handleAddProduct}
                 onUpdateProduct={handleUpdateProduct}
-                onUpdateDeals={setDeals}
+                onUpdateDeals={handleUpdateDeals}
+                onDeleteDeal={handleDeleteDeal}
                 onUpdateGadgetStatus={handleUpdateGadgetStatus}
                 onUpdateOfferStatus={handleUpdateOfferStatus}
               />
@@ -436,7 +459,7 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-        阻
+
         <footer className="main-footer">
           <div className="footer-grid">
             <div className="footer-col">

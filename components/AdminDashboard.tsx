@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
-import { Package, ShoppingBag, Users, DollarSign, ArrowUpRight, ArrowDownRight, Search, Bell, Settings, LayoutDashboard, Zap, Plus, Trash2, Camera, ChevronRight, Share2, Download, Printer, LayoutGrid, Image as ImageIcon, MoreHorizontal, X, Smartphone, ArrowRight, Edit2 } from 'lucide-react';
+
+import React, { useState, useMemo } from 'react';
+import {
+   Package, ShoppingBag, Users, DollarSign, ArrowUpRight, ArrowDownRight,
+   Search, Bell, Settings, LayoutDashboard, Zap, Plus, Trash2, Camera,
+   ChevronRight, Share2, Download, Printer, LayoutGrid, Image as ImageIcon,
+   MoreHorizontal, X, Smartphone, ArrowRight, Edit2, TrendingUp, TrendingDown,
+   Briefcase, Clock, MapPin, CheckCircle, XCircle
+} from 'lucide-react';
 import {
    BarChart,
    Bar,
@@ -10,7 +17,9 @@ import {
    ResponsiveContainer,
    PieChart,
    Pie,
-   Cell
+   Cell,
+   AreaChart,
+   Area
 } from 'recharts';
 import { Product, Order, User, Deal, OrderStatus, PaymentStatus, GadgetListing, Offer, ProductVariation } from '../types';
 import { LOGO_URL } from '../constants';
@@ -24,6 +33,7 @@ interface AdminDashboardProps {
    onUpdateOrderStatus: (id: string, status: OrderStatus) => void;
    onUpdatePaymentStatus: (id: string, status: PaymentStatus) => void;
    onUpdateDeals: (deals: Deal[]) => void;
+   onDeleteDeal: (id: string) => void;
    onUpdateGadgetStatus: (id: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') => void;
    onUpdateOfferStatus: (id: string, status: 'PENDING' | 'ACCEPTED' | 'REJECTED') => void;
    onAddProduct: (product: Product) => void;
@@ -44,6 +54,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    onAddProduct,
    onUpdateProduct,
    onUpdateDeals,
+   onDeleteDeal,
    onUpdateGadgetStatus,
    onUpdateOfferStatus,
    adminName,
@@ -59,17 +70,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    const [dealForm, setDealForm] = useState({ product: '', discountPrice: '', endDate: '' });
    const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
-   // Admin Profile State (Local for editing, saved to DB)
    const [tempAdminName, setTempAdminName] = useState(adminName);
    const [tempAdminAvatar, setTempAdminAvatar] = useState(adminAvatar);
 
-   // Sync local temp state when props change
    React.useEffect(() => {
       setTempAdminName(adminName);
       setTempAdminAvatar(adminAvatar);
    }, [adminName, adminAvatar]);
 
-   // Product Form State
    const [newProduct, setNewProduct] = useState<Partial<Product>>({
       name: '',
       description: '',
@@ -82,22 +90,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       variations: []
    });
 
-   const chartData = [
-      { name: 'Jan', revenue: 4200, profit: 2400 },
-      { name: 'Feb', revenue: 3000, profit: 1398 },
-      { name: 'Mar', revenue: 6500, profit: 4800 },
-      { name: 'May', revenue: 2780, profit: 1908 },
-      { name: 'Apr', revenue: 4890, profit: 2800 },
-   ];
+   // --- DATA ENGINE: Analytics & Reporting ---
+   const stats = useMemo(() => {
+      const paidOrders = orders.filter(o => o.paymentStatus === 'Paid');
+      const totalRevenue = paidOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+      const totalSales = orders.length;
+      const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+      const avgOrder = totalSales > 0 ? totalRevenue / totalSales : 0;
 
-   const pieData = [
-      { name: 'Desk Setup', value: 89532 },
-      { name: 'Accessories', value: 188500 },
-      { name: 'Lighting', value: 90231 },
-      { name: 'Streaming', value: 88865 },
-   ];
+      // Group Revenue by Month for Chart
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyData = months.map(month => {
+         const revenue = orders
+            .filter(o => {
+               const d = new Date(o.createdAt);
+               return months[d.getMonth()] === month;
+            })
+            .reduce((sum, o) => sum + o.totalAmount, 0);
+         return { name: month, revenue };
+      }).filter(d => d.revenue > 0 || months.indexOf(d.name) <= new Date().getMonth());
 
-   const COLORS = ['#CBD5E1', '#0E1016', '#E2E8F0', '#F1F5F9'];
+      // Category Distribution
+      const categories = ['Desk Setup', 'Lighting', 'Accessories', 'Streaming'];
+      const categoryData = categories.map(cat => ({
+         name: cat,
+         value: products.filter(p => p.category === cat).reduce((sum, p) => sum + (p.price * p.stock), 0)
+      }));
+
+      return { totalRevenue, totalSales, totalStock, avgOrder, monthlyData, categoryData };
+   }, [orders, products]);
+
+   const COLORS = ['#000000', '#475569', '#94A3B8', '#CBD5E1'];
 
    const exportOrdersCSV = () => {
       const headers = ['Order ID', 'Client', 'Date', 'Status', 'Payment', 'Total', 'Town'];
@@ -115,7 +138,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-      link.setAttribute("download", `deenice_report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute("download", `deenice_revenue_report_${new Date().toISOString().split('T')[0]}.csv`);
       link.click();
    };
 
@@ -181,181 +204,232 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    };
 
    const deleteDeal = (dealId: string) => {
-      const updatedDeals = deals.filter(d => d.id !== dealId);
-      onUpdateDeals(updatedDeals);
+      onDeleteDeal(dealId);
    };
 
    return (
-      <div className="admin-layout">
-         {/* Top Navbar */}
-         <header className="admin-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src={LOGO_URL} style={{ height: '2rem', width: '2rem' }} alt="Logo" />
-                  <span style={{ fontWeight: 800, fontSize: '1.125rem', letterSpacing: '-0.025em', textTransform: 'uppercase' }}>DEENICE<span style={{ color: 'var(--color-primary)' }}>.ADMIN</span></span>
+      <div className="admin-layout" style={{ backgroundColor: '#fcfcfc' }}>
+         {/* Premium Top Navbar */}
+         <header className="admin-header" style={{ borderBottom: '1.5px solid #000', padding: '1rem 2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <img src={LOGO_URL} style={{ height: '2.5rem', width: '2.5rem', filter: 'grayscale(1)' }} alt="Logo" />
+                  <span style={{ fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.05em', textTransform: 'uppercase' }}>DEENICE<span style={{ opacity: 0.3 }}>.ADMIN</span></span>
                </div>
-               <nav style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                  <button onClick={() => setActiveTab('dashboard')} className={`admin-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}>
-                     <LayoutGrid size={18} /> Dashboard
-                  </button>
-                  <button onClick={() => setActiveTab('products')} className={`admin-nav-btn ${activeTab === 'products' ? 'active' : ''}`}>
-                     <Package size={18} /> Products
-                  </button>
-                  <button onClick={() => setActiveTab('orders')} className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}>
-                     <ShoppingBag size={18} /> Purchases
-                  </button>
-                  <button onClick={() => setActiveTab('deals')} className={`admin-nav-btn ${activeTab === 'deals' ? 'active' : ''}`}>
-                     <Zap size={18} /> Hot Deals
-                  </button>
-                  <button onClick={() => setActiveTab('gadgets')} className={`admin-nav-btn ${activeTab === 'gadgets' ? 'active' : ''}`}>
-                     <Smartphone size={18} /> Gadget Approvals
-                  </button>
-                  <button onClick={() => setActiveTab('offers')} className={`admin-nav-btn ${activeTab === 'offers' ? 'active' : ''}`}>
-                     <Bell size={18} /> Offers
-                  </button>
-                  <button onClick={() => setActiveTab('settings')} className={`admin-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}>
-                     <Settings size={18} /> Settings
-                  </button>
+               <nav style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {[
+                     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+                     { id: 'products', label: 'Inventory', icon: Package },
+                     { id: 'orders', label: 'Purchases', icon: ShoppingBag },
+                     { id: 'deals', label: 'Flash Sales', icon: Zap },
+                     { id: 'gadgets', label: 'Approvals', icon: Smartphone },
+                     { id: 'offers', label: 'Offers', icon: Bell },
+                     { id: 'settings', label: 'Identity', icon: Settings },
+                  ].map(tab => (
+                     <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`admin-nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                        style={{
+                           display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem',
+                           borderRadius: '8px', border: 'none', background: activeTab === tab.id ? '#000' : 'transparent',
+                           color: activeTab === tab.id ? '#fff' : '#64748b', fontSize: '0.8125rem', fontWeight: 700,
+                           transition: 'all 0.2s', cursor: 'pointer'
+                        }}
+                     >
+                        <tab.icon size={16} /> {tab.label}
+                     </button>
+                  ))}
                </nav>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: '999px', border: '1px solid rgba(0,0,0,0.05)', backgroundColor: '#f9fafb' }}>
-                  <img src={adminAvatar} style={{ height: '2rem', width: '2rem', borderRadius: '50%', objectFit: 'cover' }} alt="Admin" />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{adminName}</span>
-                  <ChevronRight size={14} style={{ transform: 'rotate(90deg)', color: '#9ca3af' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', borderRadius: '12px', background: '#fff', border: '1.5px solid #000' }}>
+                  <img src={adminAvatar} style={{ height: '2rem', width: '2rem', borderRadius: '8px', objectFit: 'cover' }} alt="Admin" />
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                     <span style={{ fontSize: '0.75rem', fontWeight: 900 }}>{adminName}</span>
+                     <span style={{ fontSize: '0.625rem', fontWeight: 700, opacity: 0.5 }}>STORE OWNER</span>
+                  </div>
                </div>
             </div>
          </header>
 
-         <main className="admin-main">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-               <h1 style={{ fontSize: '1.5rem', fontWeight: 700, textTransform: 'capitalize' }}>{activeTab}</h1>
+         <main className="admin-main" style={{ padding: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
+               <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.4, marginBottom: '0.5rem' }}>Store Diagnostics</div>
+                  <h1 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.04em', textTransform: 'capitalize' }}>{activeTab}</h1>
+               </div>
                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ position: 'relative' }}>
-                     <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                     <input type="text" placeholder="Search..." style={{ padding: '0.625rem 1rem 0.625rem 2.5rem', borderRadius: '999px', border: '1px solid #e5e7eb', width: '16rem', outline: 'none' }} />
+                     <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} />
+                     <input type="text" placeholder="Search orders, gadgets..." style={{ padding: '0.875rem 1rem 0.875rem 3rem', borderRadius: '12px', border: '1.5px solid #000', width: '20rem', outline: 'none', fontWeight: 700 }} />
                   </div>
-                  <button onClick={exportOrdersCSV} className="btn-secondary" style={{ padding: '0.625rem 1.25rem', borderRadius: '999px', fontSize: '0.875rem' }}>
-                     <Share2 size={16} style={{ marginRight: '0.5rem' }} /> Export CSV
+                  <button onClick={exportOrdersCSV} style={{ padding: '0.875rem 1.5rem', borderRadius: '12px', background: '#000', color: '#fff', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer' }}>
+                     <Download size={18} /> REPORT
                   </button>
                </div>
             </div>
 
             {activeTab === 'dashboard' && (
                <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                     <div style={{ gridColumn: 'span 3', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div className="dashboard-card group">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af' }}>Total Products Sales</p>
-                              <div style={{ padding: '0.5rem', borderRadius: '0.75rem', backgroundColor: '#f9fafb' }}><ImageIcon size={18} style={{ color: '#9ca3af' }} /></div>
+                  {/* Stats Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+                     {[
+                        { label: 'Total Revenue', value: `KES ${stats.totalRevenue.toLocaleString()}`, change: '+24.5%', icon: DollarSign, positive: true },
+                        { label: 'Product Sales', value: stats.totalSales, change: '+12%', icon: ShoppingBag, positive: true },
+                        { label: 'Volume Sold', value: stats.totalStock, change: '-4%', icon: Package, positive: false },
+                        { label: 'Avg Order', value: `KES ${Math.round(stats.avgOrder).toLocaleString()}`, change: '+8%', icon: Zap, positive: true },
+                     ].map((stat, i) => (
+                        <div key={i} style={{ background: '#fff', border: '1.5px solid #000', padding: '1.5rem', borderRadius: '16px', boxShadow: '4px 4px 0 #000' }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                              <div style={{ padding: '0.5rem', background: '#000', borderRadius: '8px', color: '#fff' }}><stat.icon size={20} /></div>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 900, color: stat.positive ? '#10b981' : '#ef4444', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                 {stat.positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />} {stat.change}
+                              </div>
                            </div>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                              <p style={{ fontSize: '1.875rem', fontWeight: 900 }}>{orders.length.toLocaleString()}</p>
-                              <span style={{ backgroundColor: '#E3F77E', fontSize: '0.625rem', fontWeight: 900, padding: '0.25rem 0.5rem', borderRadius: '999px' }}>+10%</span>
-                           </div>
-                           <button onClick={() => setActiveTab('orders')} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', fontWeight: 700, paddingTop: '1rem', borderTop: '1px solid #f9fafb', color: '#9ca3af', background: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: 'none', cursor: 'pointer' }}>
-                              View Sales Details <ArrowRight size={14} />
-                           </button>
+                           <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', opacity: 0.4, marginBottom: '0.25rem' }}>{stat.label}</div>
+                           <div style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{stat.value}</div>
                         </div>
+                     ))}
+                  </div>
 
-                        <div className="dashboard-card group">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af' }}>Total Stock Value</p>
-                              <div style={{ padding: '0.5rem', borderRadius: '0.75rem', backgroundColor: '#f9fafb' }}><ShoppingBag size={18} style={{ color: '#9ca3af' }} /></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+                     {/* Revenue Chart */}
+                     <div style={{ gridColumn: 'span 8', background: '#fff', border: '1.5px solid #000', padding: '2rem', borderRadius: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                           <h3 style={{ fontWeight: 900, fontSize: '1.25rem' }}>Revenue Analytics</h3>
+                           <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#000', color: '#fff', fontSize: '0.75rem', fontWeight: 900, border: 'none' }}>MONTHLY</button>
+                              <button style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'transparent', color: '#000', fontSize: '0.75rem', fontWeight: 900, border: '1.5px solid #000' }}>ANNUAL</button>
                            </div>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                              <p style={{ fontSize: '1.875rem', fontWeight: 900 }}>{products.reduce((s, p) => s + p.stock, 0).toLocaleString()}</p>
-                              <span style={{ backgroundColor: '#FCA5A5', fontSize: '0.625rem', fontWeight: 900, padding: '0.25rem 0.5rem', borderRadius: '999px', color: '#dc2626' }}>-12%</span>
-                           </div>
-                           <button onClick={() => setActiveTab('products')} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', fontWeight: 700, paddingTop: '1rem', borderTop: '1px solid #f9fafb', color: '#9ca3af', background: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: 'none', cursor: 'pointer' }}>
-                              View All Products <ArrowRight size={14} />
-                           </button>
                         </div>
-                     </div>
-
-                     <div className="dashboard-card" style={{ gridColumn: 'span 5' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                           <h3 style={{ fontWeight: 700 }}>Revenue Growth</h3>
-                        </div>
-                        <div style={{ height: '16rem' }}>
-                           <p style={{ fontSize: '1.875rem', fontWeight: 900, marginBottom: '1.5rem' }}>KES {orders.reduce((s, o) => s + o.totalAmount, 0).toLocaleString()} <span style={{ fontSize: '0.75rem', backgroundColor: '#E3F77E', padding: '0.25rem 0.5rem', borderRadius: '999px', marginLeft: '0.5rem' }}>+45%</span></p>
-                           <ResponsiveContainer width="100%" height="80%">
-                              <BarChart data={chartData}>
-                                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F1F5F9" />
-                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94A3B8' }} />
-                                 <YAxis hide />
-                                 <Tooltip />
-                                 <Bar dataKey="revenue" fill="#000" radius={[4, 4, 0, 0]} barSize={32} />
-                                 <Bar dataKey="profit" fill="#E2E8F0" radius={[4, 4, 0, 0]} barSize={32} />
-                              </BarChart>
+                        <div style={{ height: '20rem' }}>
+                           <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={stats.monthlyData}>
+                                 <defs>
+                                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                                       <stop offset="5%" stopColor="#000" stopOpacity={0.1} />
+                                       <stop offset="95%" stopColor="#000" stopOpacity={0} />
+                                    </linearGradient>
+                                 </defs>
+                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} />
+                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} />
+                                 <Tooltip contentStyle={{ borderRadius: '12px', border: '2px solid #000', fontWeight: 700 }} />
+                                 <Area type="monotone" dataKey="revenue" stroke="#000" strokeWidth={4} fillOpacity={1} fill="url(#colorRev)" />
+                              </AreaChart>
                            </ResponsiveContainer>
                         </div>
                      </div>
 
-                     <div className="dashboard-card" style={{ gridColumn: 'span 4' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                           <h3 style={{ fontWeight: 700 }}>Sales Statistics</h3>
-                        </div>
-                        <div style={{ position: 'relative', height: '16rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                     {/* Pie Chart */}
+                     <div style={{ gridColumn: 'span 4', background: '#fff', border: '1.5px solid #000', padding: '2rem', borderRadius: '20px' }}>
+                        <h3 style={{ fontWeight: 900, fontSize: '1.25rem', marginBottom: '2rem' }}>Category Mix</h3>
+                        <div style={{ height: '20rem', position: 'relative' }}>
                            <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
-                                 <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                 <Pie data={stats.categoryData} innerRadius={70} outerRadius={90} paddingAngle={2} dataKey="value">
+                                    {stats.categoryData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                  </Pie>
+                                 <Tooltip />
                               </PieChart>
                            </ResponsiveContainer>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                              {stats.categoryData.map((cat, i) => (
+                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                       <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: COLORS[i % COLORS.length] }}></div>
+                                       <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{cat.name}</span>
+                                    </div>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 900 }}>KES {cat.value.toLocaleString()}</span>
+                                 </div>
+                              ))}
+                           </div>
                         </div>
                      </div>
+                  </div>
+
+                  {/* Top Products Table */}
+                  <div style={{ marginTop: '2.5rem', background: '#fff', border: '1.5px solid #000', borderRadius: '20px', overflow: 'hidden' }}>
+                     <div style={{ padding: '1.5rem 2rem', borderBottom: '1.5px solid #000', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ fontWeight: 900, fontSize: '1.25rem' }}>Top Selling Gear</h3>
+                        <button onClick={() => setActiveTab('products')} style={{ fontSize: '0.75rem', fontWeight: 900, color: '#000', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>VIEW FULL INVENTORY <ChevronRight size={14} /></button>
+                     </div>
+                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead style={{ background: '#fafafa', borderBottom: '1.5px solid #000' }}>
+                           <tr>
+                              <th style={{ textAlign: 'left', padding: '1rem 2rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>PRODUCT</th>
+                              <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>CATEGORY</th>
+                              <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>STOCK</th>
+                              <th style={{ textAlign: 'right', padding: '1rem 2rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>REVENUE</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {products.slice(0, 5).map((p, i) => (
+                              <tr key={i} style={{ borderBottom: i === 4 ? 'none' : '1px solid #f1f5f9' }}>
+                                 <td style={{ padding: '1rem 2rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                       <img src={p.images[0]} style={{ width: '3rem', height: '3rem', borderRadius: '8px', objectFit: 'cover', border: '1px solid #eee' }} />
+                                       <div style={{ fontWeight: 800, fontSize: '0.875rem' }}>{p.name}</div>
+                                    </div>
+                                 </td>
+                                 <td style={{ padding: '1rem' }}><span style={{ fontSize: '0.75rem', fontWeight: 700, background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px' }}>{p.category}</span></td>
+                                 <td style={{ padding: '1rem' }}><span style={{ fontSize: '0.875rem', fontWeight: 800 }}>{p.stock} units</span></td>
+                                 <td style={{ padding: '1rem 2rem', textAlign: 'right', fontWeight: 900 }}>KES {(p.price * (p.salesCount || 0)).toLocaleString()}</td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
                   </div>
                </>
             )}
 
             {activeTab === 'orders' && (
-               <div className="dashboard-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-                     <div>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Store Purchases Ledger</h2>
-                        <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Manage order statuses and track live shop inventory.</p>
-                     </div>
+               <div style={{ background: '#fff', border: '1.5px solid #000', borderRadius: '20px', overflow: 'hidden' }}>
+                  <div style={{ padding: '2rem', borderBottom: '1.5px solid #000' }}>
+                     <h2 style={{ fontSize: '1.5rem', fontWeight: 900 }}>Purchase Ledger</h2>
+                     <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Real-time order tracking and financial logs.</p>
                   </div>
-                  <table className="data-table">
-                     <thead>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                     <thead style={{ background: '#fafafa', borderBottom: '1.5px solid #000' }}>
                         <tr>
-                           <th>ID</th>
-                           <th>Customer</th>
-                           <th>Amount</th>
-                           <th>Progress</th>
-                           <th>Payment</th>
-                           <th style={{ textAlign: 'right' }}>Label</th>
+                           <th style={{ textAlign: 'left', padding: '1.25rem 2rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>ORDER ID</th>
+                           <th style={{ textAlign: 'left', padding: '1.25rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>CUSTOMER</th>
+                           <th style={{ textAlign: 'left', padding: '1.25rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>AMOUNT</th>
+                           <th style={{ textAlign: 'left', padding: '1.25rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>STATUS</th>
+                           <th style={{ textAlign: 'left', padding: '1.25rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>PAYMENT</th>
+                           <th style={{ textAlign: 'right', padding: '1.25rem 2rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>ACTIONS</th>
                         </tr>
                      </thead>
                      <tbody>
                         {orders.map(order => (
-                           <tr key={order.id}>
-                              <td style={{ fontWeight: 700 }}>{order.id}</td>
-                              <td style={{ fontWeight: 700 }}>{order.userId}</td>
-                              <td style={{ fontWeight: 900 }}>KES {order.totalAmount.toLocaleString()}</td>
-                              <td>
+                           <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '1.25rem 2rem', fontWeight: 900 }}>{order.id}</td>
+                              <td style={{ padding: '1.25rem' }}>
+                                 <div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{order.userId}</div>
+                                 <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{new Date(order.createdAt).toLocaleDateString()}</div>
+                              </td>
+                              <td style={{ padding: '1.25rem', fontWeight: 900 }}>KES {order.totalAmount.toLocaleString()}</td>
+                              <td style={{ padding: '1.25rem' }}>
                                  <select
                                     value={order.status}
                                     onChange={(e) => onUpdateOrderStatus(order.id, e.target.value as OrderStatus)}
-                                    style={{ backgroundColor: '#f9fafb', border: 'none', borderRadius: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', outline: 'none' }}
+                                    style={{ padding: '6px 12px', borderRadius: '8px', border: '1.5px solid #000', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', outline: 'none' }}
                                  >
                                     {Object.values(OrderStatus).map(s => <option key={s} value={s}>{s}</option>)}
                                  </select>
                               </td>
-                              <td>
+                              <td style={{ padding: '1.25rem' }}>
                                  <select
                                     value={order.paymentStatus}
                                     onChange={(e) => onUpdatePaymentStatus(order.id, e.target.value as PaymentStatus)}
-                                    style={{ backgroundColor: '#f9fafb', border: 'none', borderRadius: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', outline: 'none' }}
+                                    style={{ padding: '6px 12px', borderRadius: '8px', border: '1.5px solid #000', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', outline: 'none', background: order.paymentStatus === 'Paid' ? '#E3F77E' : '#fff' }}
                                  >
                                     {Object.values(PaymentStatus).map(s => <option key={s} value={s}>{s}</option>)}
                                  </select>
                               </td>
-                              <td style={{ textAlign: 'right' }}>
-                                 <button onClick={() => setSelectedOrderForLabel(order)} className="icon-btn" style={{ marginLeft: 'auto' }}><Printer size={16} /></button>
+                              <td style={{ padding: '1.25rem 2rem', textAlign: 'right' }}>
+                                 <button onClick={() => setSelectedOrderForLabel(order)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#000' }}><Printer size={20} /></button>
                               </td>
                            </tr>
                         ))}
@@ -365,13 +439,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
 
             {activeTab === 'settings' && (
-               <div className="dashboard-card" style={{ maxWidth: '42rem' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, fontStyle: 'italic', marginBottom: '2.5rem' }}>Admin Profile Identity</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                     <div style={{ position: 'relative' }} className="group">
-                        <img src={tempAdminAvatar} style={{ width: '6rem', height: '6rem', borderRadius: '50%', objectFit: 'cover', border: '4px solid rgba(179, 200, 239, 0.2)', boxShadow: 'var(--shadow-xl)' }} />
-                        <label style={{ position: 'absolute', bottom: 0, right: 0, background: 'black', color: 'white', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer' }}>
-                           <Camera size={16} />
+               <div style={{ background: '#fff', border: '1.5px solid #000', borderRadius: '24px', padding: '3rem', maxWidth: '50rem' }}>
+                  <h2 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '2.5rem' }}>Store Identity</h2>
+                  <div style={{ display: 'flex', gap: '3rem' }}>
+                     <div style={{ position: 'relative' }}>
+                        <img src={tempAdminAvatar} style={{ width: '8rem', height: '8rem', borderRadius: '24px', objectFit: 'cover', border: '3px solid #000' }} />
+                        <label style={{ position: 'absolute', bottom: '-0.75rem', right: '-0.75rem', background: '#000', color: '#fff', padding: '0.75rem', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                           <Camera size={20} />
                            <input type="file" style={{ display: 'none' }} accept="image/*" onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
@@ -382,133 +456,137 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                            }} />
                         </label>
                      </div>
-                     <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div>
-                           <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af', marginBottom: '0.5rem' }}>Public Admin Name</label>
-                           <div style={{ display: 'flex', gap: '1rem' }}>
-                              <input
-                                 type="text"
-                                 style={{ flexGrow: 1, backgroundColor: '#f9fafb', borderRadius: '1rem', padding: '1rem', fontSize: '0.875rem', fontWeight: 700, border: 'none', outline: 'none' }}
-                                 value={tempAdminName}
-                                 onChange={(e) => setTempAdminName(e.target.value)}
-                              />
-                              <button
-                                 onClick={() => onUpdateAdminProfile(tempAdminName, tempAdminAvatar)}
-                                 className="confera-btn"
-                                 style={{ padding: '0.75rem 1.5rem', fontSize: '0.75rem' }}
-                              >
-                                 Update Identity
-                              </button>
-                           </div>
+                     <div style={{ flexGrow: 1 }}>
+                        <div style={{ marginBottom: '2rem' }}>
+                           <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.75rem' }}>Admin Handle</label>
+                           <input
+                              type="text"
+                              style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '2px solid #000', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
+                              value={tempAdminName}
+                              onChange={(e) => setTempAdminName(e.target.value)}
+                           />
                         </div>
+                        <button
+                           onClick={() => onUpdateAdminProfile(tempAdminName, tempAdminAvatar)}
+                           style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#000', color: '#fcfcfc', fontWeight: 900, border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                        >
+                           UPDATE IDENTITY
+                        </button>
                      </div>
                   </div>
                </div>
             )}
 
             {activeTab === 'products' && (
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                  <button
+                     onClick={() => { setShowProductForm(true); setEditingProductId(null); }}
+                     style={{ border: '2px dashed #000', borderRadius: '24px', padding: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', background: 'transparent', cursor: 'pointer', transition: 'all 0.2s' }}
+                     className="hover-bg-black"
+                  >
+                     <Plus size={40} />
+                     <span style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>New Product</span>
+                  </button>
                   {products.map(p => (
-                     <div key={p.id} className="dashboard-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', position: 'relative' }}>
-                        <img src={p.images[0]} style={{ width: '5rem', height: '5rem', borderRadius: '1rem', objectFit: 'cover' }} />
+                     <div key={p.id} style={{ background: '#fff', border: '1.5px solid #000', padding: '1.5rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1.5rem', position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#E3F77E', padding: '4px 10px', borderRadius: '99px', fontSize: '0.625rem', fontWeight: 900 }}>{p.category}</div>
+                        <img src={p.images[0]} style={{ width: '6rem', height: '6rem', borderRadius: '16px', objectFit: 'cover', border: '1px solid #eee' }} />
                         <div style={{ flexGrow: 1 }}>
-                           <h4 style={{ fontWeight: 700 }}>{p.name}</h4>
-                           <p style={{ fontSize: '0.875rem', fontWeight: 900, marginTop: '0.5rem' }}>KES {p.price.toLocaleString()}</p>
+                           <h4 style={{ fontWeight: 900, fontSize: '1.125rem' }}>{p.name}</h4>
+                           <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontWeight: 900, color: '#000' }}>KES {p.price.toLocaleString()}</span>
+                              <span style={{ fontSize: '0.75rem', opacity: 0.4 }}>•</span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: p.stock < 5 ? '#ef4444' : '#64748b' }}>Stock: {p.stock}</span>
+                           </div>
+                           <button onClick={() => handleEditProduct(p)} style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#000', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' }}>
+                              <Edit2 size={12} /> EDIT GEAR
+                           </button>
                         </div>
-                        <button onClick={() => handleEditProduct(p)} className="icon-btn" style={{ padding: '0.5rem', backgroundColor: '#f9fafb' }}>
-                           <Edit2 size={16} />
-                        </button>
                      </div>
                   ))}
-                  <button
-                     onClick={() => setShowProductForm(true)}
-                     style={{ border: '4px dashed #f3f4f6', borderRadius: '2rem', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', color: '#d1d5db', cursor: 'pointer', background: 'transparent' }}
-                     className="hover-text-primary"
-                  >
-                     <Plus size={32} />
-                     <span style={{ fontSize: '0.875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>New Tech Item</span>
-                  </button>
                </div>
             )}
 
             {activeTab === 'deals' && (
                <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  {/* ... (Existing deals code) ... */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                     <h2 style={{ fontSize: '1.75rem', fontWeight: 800 }}>Active Hot Deals</h2>
-                     <button onClick={() => setIsAddingDeal(true)} className="btn-primary">
-                        <Plus size={20} /> Create Deal
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                     <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.4, marginBottom: '0.5rem' }}>Flash Management</div>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 900 }}>Active Sale Events</h2>
+                     </div>
+                     <button onClick={() => setIsAddingDeal(true)} style={{ padding: '1rem 2rem', borderRadius: '16px', background: '#000', color: '#fff', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer' }}>
+                        <Zap size={20} /> CREATE EVENT
                      </button>
                   </div>
 
                   {isAddingDeal && (
-                     <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', borderRadius: '24px' }}>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>New Flash Sale</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                     <div style={{ background: '#000', color: '#fff', padding: '2.5rem', marginBottom: '3rem', borderRadius: '32px' }}>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '2rem' }}>Configure Flash Event</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2.5rem' }}>
                            <div>
-                              <label className="input-label">Select Product</label>
+                              <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>TARGET PRODUCT</label>
                               <select
-                                 className="admin-input"
+                                 style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
                                  value={dealForm.product}
                                  onChange={(e) => setDealForm({ ...dealForm, product: e.target.value })}
-                                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
                               >
-                                 <option value="">-- Choose Product --</option>
+                                 <option value="">-- Choose Item --</option>
                                  {products.map(p => (
                                     <option key={p.id} value={p.id}>{p.name} (KES {p.price.toLocaleString()})</option>
                                  ))}
                               </select>
                            </div>
                            <div>
-                              <label className="input-label">Discount Price (KES)</label>
+                              <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>FESTIVAL PRICE (KES)</label>
                               <input
                                  type="number"
-                                 className="admin-input"
-                                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                 style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
                                  value={dealForm.discountPrice}
                                  onChange={(e) => setDealForm({ ...dealForm, discountPrice: e.target.value })}
                               />
                            </div>
                            <div>
-                              <label className="input-label">End Date</label>
+                              <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>EXPIRY TIMESTAMP</label>
                               <input
                                  type="datetime-local"
-                                 className="admin-input"
-                                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                 style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
                                  value={dealForm.endDate}
                                  onChange={(e) => setDealForm({ ...dealForm, endDate: e.target.value })}
                               />
                            </div>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                           <button onClick={() => setIsAddingDeal(false)} className="btn-outline">Cancel</button>
-                           <button onClick={addDeal} className="btn-primary">Publish Deal</button>
+                           <button onClick={() => setIsAddingDeal(false)} style={{ background: 'transparent', color: '#fff', border: 'none', fontWeight: 900, cursor: 'pointer' }}>CANCEL</button>
+                           <button onClick={addDeal} style={{ padding: '1.25rem 3rem', borderRadius: '12px', background: '#E3F77E', color: '#000', fontWeight: 900, border: 'none', cursor: 'pointer' }}>PUBLISH SALE</button>
                         </div>
                      </div>
                   )}
 
-                  <div className="orders-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
                      {deals.map(deal => {
                         const product = products.find(p => p.id === deal.productId);
                         if (!product) return null;
                         return (
-                           <div key={deal.id} className="stat-card" style={{ position: 'relative', background: 'white', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-                              <button onClick={() => deleteDeal(deal.id)} style={{ position: 'absolute', top: '1rem', right: '1rem', color: '#ef4444' }}>
-                                 <Trash2 size={18} />
+                           <div key={deal.id} style={{ background: '#fff', border: '1.5px solid #000', padding: '1.5rem', borderRadius: '24px', position: 'relative' }}>
+                              <button onClick={() => deleteDeal(deal.id)} style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}>
+                                 <Trash2 size={20} />
                               </button>
-                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
-                                 <img src={product.images[0]} style={{ width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover' }} />
+                              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                 <img src={product.images[0]} style={{ width: '5rem', height: '5rem', borderRadius: '16px', objectFit: 'cover' }} />
                                  <div>
-                                    <h4 style={{ fontWeight: 700 }}>{product.name}</h4>
-                                    <span className="badge" style={{ background: '#FECACA', color: '#EF4444', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem' }}>Ends: {new Date(deal.endsAt).toLocaleDateString()}</span>
+                                    <h4 style={{ fontWeight: 900, fontSize: '1.125rem' }}>{product.name}</h4>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '0.25rem' }}>
+                                       <Clock size={12} style={{ color: '#ef4444' }} />
+                                       <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>ENDS: {new Date(deal.endsAt).toLocaleDateString()}</span>
+                                    </div>
                                  </div>
                               </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid #f3f4f6' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '1.5rem', borderTop: '1.5px solid #000' }}>
                                  <div>
-                                    <span style={{ textDecoration: 'line-through', color: '#9ca3af', fontSize: '0.875rem' }}>KES {product.price.toLocaleString()}</span>
-                                    <div style={{ fontWeight: 900, fontSize: '1.25rem', color: 'var(--color-primary-dark)' }}>KES {deal.discountPrice.toLocaleString()}</div>
+                                    <div style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.875rem', fontWeight: 700 }}>KES {product.price.toLocaleString()}</div>
+                                    <div style={{ fontWeight: 900, fontSize: '1.5rem' }}>KES {deal.discountPrice.toLocaleString()}</div>
                                  </div>
-                                 <div className="badge" style={{ background: '#D1FAE5', color: '#059669', padding: '4px 8px', borderRadius: '4px' }}>ACTIVE</div>
+                                 <div style={{ background: '#E3F77E', color: '#000', padding: '6px 12px', borderRadius: '8px', fontSize: '0.625rem', fontWeight: 900 }}>LIVE EVENT</div>
                               </div>
                            </div>
                         );
@@ -519,114 +597,96 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             {activeTab === 'gadgets' && (
                <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '2rem' }}>Gadget Approvals</h2>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                     <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.4, marginBottom: '0.5rem' }}>Marketplace Queue</div>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 900 }}>Gadget Listing Requests</h2>
+                     </div>
+                  </div>
 
-                  <div className="orders-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
-                     {gadgets.length === 0 && <p className="text-gray-400">No gadgets pending approval.</p>}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+                     {gadgets.length === 0 && <div style={{ border: '2px dashed #000', padding: '4rem', borderRadius: '32px', textAlign: 'center', fontWeight: 900, opacity: 0.3 }}>NO PENDING REQUESTS</div>}
                      {gadgets.map(gadget => (
-                        <div key={gadget.id} className="dashboard-card" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', padding: '1.5rem', position: 'relative' }}>
-                           {/* Mobile-friendly Header with large status badge */}
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: '1rem' }}>
-                              <h4 style={{ fontWeight: 800, fontSize: '1.25rem' }}>{gadget.deviceName}</h4>
-                              <span className={`badge ${gadget.status === 'APPROVED' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`} style={{ padding: '6px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>
-                                 {gadget.status}
-                              </span>
-                           </div>
-
-                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '8px' }}>
-                              {gadget.images.map((img, idx) => (
-                                 <a key={idx} href={img} target="_blank" rel="noopener noreferrer">
-                                    <img src={img} style={{ width: '100%', aspectRatio: '1/1', borderRadius: '8px', objectFit: 'cover', border: '1px solid #eee' }} />
-                                 </a>
-                              ))}
+                        <div key={gadget.id} style={{ background: '#fff', border: '1.5px solid #000', padding: '2rem', borderRadius: '32px', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '3rem' }}>
+                           <div>
+                              <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', marginBottom: '1rem', paddingBottom: '0.5rem' }}>
+                                 {gadget.images.map((img, idx) => (
+                                    <a key={idx} href={img} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                                       <img src={img} style={{ width: '8rem', height: '8rem', borderRadius: '16px', objectFit: 'cover', border: '1.5px solid #000' }} />
+                                    </a>
+                                 ))}
+                              </div>
                               {gadget.proofOfPurchase && (
-                                 <a href={gadget.proofOfPurchase} target="_blank" rel="noopener noreferrer" style={{ position: 'relative' }}>
-                                    <img src={gadget.proofOfPurchase} style={{ width: '100%', aspectRatio: '1/1', borderRadius: '8px', objectFit: 'cover', border: '2px solid #000' }} />
-                                    <span style={{ position: 'absolute', bottom: '0', left: '0', right: '0', background: 'rgba(0,0,0,0.8)', color: 'white', fontSize: '8px', padding: '2px', textAlign: 'center', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px', fontWeight: 900 }}>PROOF</span>
-                                 </a>
+                                 <div style={{ background: '#000', color: '#fff', padding: '1.5rem', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>Ownership Certificate</div>
+                                    <a href={gadget.proofOfPurchase} target="_blank" rel="noopener noreferrer">
+                                       <img src={gadget.proofOfPurchase} style={{ width: '100%', borderRadius: '12px', border: '2px solid #fff' }} />
+                                    </a>
+                                 </div>
                               )}
                            </div>
 
-                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', fontSize: '0.8125rem', color: '#6b7280', background: '#f8fafc', padding: '1rem', borderRadius: '12px' }}>
-                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af' }}>Seller</span>
-                                    <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{gadget.sellerName} ({gadget.location})</span>
-                                 </div>
-                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#9ca3af' }}>Price</span>
-                                    <span style={{ fontWeight: 800, color: 'var(--color-primary-dark)', fontSize: '1rem' }}>KES {gadget.price.toLocaleString()}</span>
-                                 </div>
-                                 {gadget.batteryHealth && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                       <span style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: '#EF4444' }}>Battery</span>
-                                       <span style={{ fontWeight: 800, color: '#EF4444', fontSize: '1rem' }}>{gadget.batteryHealth}%</span>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                 <div>
+                                    <h3 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.03em' }}>{gadget.deviceName}</h3>
+                                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                                       <div style={{ fontSize: '0.875rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> {gadget.location}</div>
+                                       <div style={{ fontSize: '0.875rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> {gadget.durationUsed}</div>
                                     </div>
-                                 )}
+                                 </div>
+                                 <div style={{ fontSize: '2rem', fontWeight: 900 }}>KES {gadget.price.toLocaleString()}</div>
                               </div>
 
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '1rem', background: 'white', padding: '1rem', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
-                                 <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Condition</span>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.condition}</span>
-                                 </div>
-                                 <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Used For</span>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.durationUsed}</span>
-                                 </div>
-                                 <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Storage / RAM</span>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.storage} / {gadget.ram}</span>
-                                 </div>
-                                 <div>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>Color</span>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.color}</span>
-                                 </div>
-                                 <div style={{ gridColumn: '1 / -1' }}>
-                                    <span style={{ display: 'block', fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#9ca3af', marginBottom: '4px' }}>RFS</span>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{gadget.rfs}</span>
-                                 </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+                                 {[
+                                    { label: 'Condition', value: gadget.condition },
+                                    { label: 'Storage', value: gadget.storage },
+                                    { label: 'RAM', value: gadget.ram },
+                                    { label: 'Color', value: gadget.color },
+                                 ].map((spec, s) => (
+                                    <div key={s} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
+                                       <div style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.4, marginBottom: '0.25rem' }}>{spec.label}</div>
+                                       <div style={{ fontSize: '0.875rem', fontWeight: 900 }}>{spec.value}</div>
+                                    </div>
+                                 ))}
                               </div>
 
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem' }}>
+                              {gadget.batteryHealth && (
+                                 <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', padding: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 900, color: '#dc2626', fontSize: '0.75rem' }}>BATTERY CAPACITY REPORT</span>
+                                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#dc2626' }}>{gadget.batteryHealth}%</span>
+                                 </div>
+                              )}
+
+                              <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '16px' }}>
+                                 <div style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.4, marginBottom: '0.5rem' }}>Seller's Note</div>
+                                 <p style={{ fontWeight: 700, lineHeight: 1.5 }}>{gadget.rfs}</p>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '1rem', marginTop: 'auto' }}>
                                  <a
-                                    href={`https://wa.me/${gadget.phoneNumber}?text=Hi ${gadget.sellerName}, I'm the admin from Deenice Store regarding your ${gadget.deviceName} listing.`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="badge-outline"
-                                    style={{ flex: 1, minWidth: '200px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '12px 24px', borderRadius: '12px', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 800, color: '#10B981', border: '2px solid #10B981', background: 'white' }}
+                                    href={`https://wa.me/${gadget.phoneNumber}`}
+                                    className="btn-outline"
+                                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', padding: '1.25rem', borderRadius: '16px', border: '1.5px solid #000', fontWeight: 900, textDecoration: 'none', color: '#000' }}
                                  >
-                                    <Smartphone size={18} /> Chat on WhatsApp
+                                    <Smartphone size={18} /> CONTACT SELLER
                                  </a>
 
-                                 <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minWidth: '200px' }}>
-                                    {gadget.status === 'PENDING' && (
-                                       <>
-                                          <button
-                                             onClick={() => onUpdateGadgetStatus(gadget.id, 'APPROVED')}
-                                             className="btn-primary"
-                                             style={{ flex: 1, height: '48px', backgroundColor: '#10B981', borderColor: '#10B981', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}
-                                          >
-                                             Approve
-                                          </button>
-                                          <button
-                                             onClick={() => onUpdateGadgetStatus(gadget.id, 'REJECTED')}
-                                             className="btn-outline"
-                                             style={{ flex: 1, height: '48px', color: '#EF4444', borderColor: '#FECACA', background: '#FEF2F2', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}
-                                          >
-                                             Reject
-                                          </button>
-                                       </>
-                                    )}
-                                    {gadget.status !== 'PENDING' && (
-                                       <button
-                                          onClick={() => onUpdateGadgetStatus(gadget.id, 'PENDING')}
-                                          style={{ flex: 1, height: '48px', fontSize: '0.75rem', textDecoration: 'underline', color: '#9ca3af', fontWeight: 700, border: 'none', background: 'none' }}
-                                       >
-                                          Reset Status
+                                 {gadget.status === 'PENDING' ? (
+                                    <div style={{ display: 'flex', gap: '1rem', flex: 1.5 }}>
+                                       <button onClick={() => onUpdateGadgetStatus(gadget.id, 'APPROVED')} style={{ flex: 1, background: '#000', color: '#fff', border: 'none', borderRadius: '16px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                          <CheckCircle size={18} /> APPROVE
                                        </button>
-                                    )}
-                                 </div>
+                                       <button onClick={() => onUpdateGadgetStatus(gadget.id, 'REJECTED')} style={{ flex: 1, background: '#FEF2F2', color: '#ef4444', border: '1.5px solid #FCA5A5', borderRadius: '16px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                          <XCircle size={18} /> REJECT
+                                       </button>
+                                    </div>
+                                 ) : (
+                                    <button onClick={() => onUpdateGadgetStatus(gadget.id, 'PENDING')} style={{ flex: 1.5, background: 'transparent', border: '1.5px solid #e2e8f0', borderRadius: '16px', fontWeight: 900, color: '#64748b', cursor: 'pointer' }}>
+                                       RESET STATUS TO PENDING
+                                    </button>
+                                 )}
                               </div>
                            </div>
                         </div>
@@ -636,159 +696,95 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
          </main>
 
-
-         {/* ArrowRight Icon Component (Simulated if missing, but we imported it from lucide-react above) */}
-
          {/* Product Form Modal */}
          {showProductForm && (
-            <div className="admin-modal-overlay">
+            <div className="admin-modal-overlay" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
                <div className="admin-modal-backdrop" onClick={() => { setShowProductForm(false); setEditingProductId(null); }} />
-               <div className="admin-modal-content">
-                  <h2 style={{ fontSize: '1.875rem', fontWeight: 900, fontStyle: 'italic', marginBottom: '2rem' }}>{editingProductId ? 'Edit' : 'Add New'} <span style={{ color: 'var(--color-primary)' }}>Curated Tech</span></h2>
-                  <form onSubmit={handleProductSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                     {/* ... Form inputs ... */}
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <input required placeholder="Item Name" type="text" style={{ width: '100%', backgroundColor: '#f9fafb', border: 'none', borderRadius: '0.75rem', padding: '1rem', fontSize: '0.875rem' }} value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
-                        <select style={{ width: '100%', backgroundColor: '#f9fafb', border: 'none', borderRadius: '0.75rem', padding: '1rem', fontSize: '0.875rem' }} value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}>
-                           <option>Desk Setup</option><option>Lighting</option><option>Accessories</option><option>Streaming</option>
-                        </select>
-                     </div>
-                     <textarea required placeholder="Premium Description" rows={3} style={{ width: '100%', backgroundColor: '#f9fafb', border: 'none', borderRadius: '0.75rem', padding: '1rem', fontSize: '0.875rem' }} value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <input required placeholder="Price (KES)" type="number" style={{ width: '100%', backgroundColor: '#f9fafb', border: 'none', borderRadius: '0.75rem', padding: '1rem', fontSize: '0.875rem' }} value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: Number(e.target.value) })} />
-                        <input required placeholder="Initial Stock" type="number" style={{ width: '100%', backgroundColor: '#f9fafb', border: 'none', borderRadius: '0.75rem', padding: '1rem', fontSize: '0.875rem' }} value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: Number(e.target.value) })} />
-                     </div>
-
-                     <div style={{ border: '1px solid #f3f4f6', padding: '1.5rem', borderRadius: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                           <h4 style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>Product Images (URLs)</h4>
-                           <button type="button" onClick={() => setNewProduct({ ...newProduct, images: [...(newProduct.images || []), ''] })} className="icon-btn" style={{ backgroundColor: '#f9fafb' }}><Plus size={16} /></button>
+               <div className="admin-modal-content" style={{ borderRadius: '32px', padding: '3rem', border: '2px solid #000' }}>
+                  <h2 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: '2.5rem' }}>{editingProductId ? 'EDIT' : 'ADD'} <span style={{ opacity: 0.3 }}>ITEM</span></h2>
+                  <form onSubmit={handleProductSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div>
+                           <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Item Identity</label>
+                           <input required placeholder="e.g. Keychron K2" type="text" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none' }} value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                           {newProduct.images?.map((img, idx) => (
-                              <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                 <input
-                                    placeholder="https://example.com/image.jpg"
-                                    style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', fontSize: '0.75rem', border: '1px solid #eee' }}
-                                    value={img}
-                                    onChange={(e) => {
-                                       const updated = [...(newProduct.images || [])];
-                                       updated[idx] = e.target.value;
-                                       setNewProduct({ ...newProduct, images: updated });
-                                    }}
-                                 />
-                                 <button type="button" onClick={() => setNewProduct({ ...newProduct, images: newProduct.images?.filter((_, i) => i !== idx) })} style={{ color: '#ef4444' }}><X size={14} /></button>
-                              </div>
-                           ))}
+                        <div>
+                           <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Curation Category</label>
+                           <select style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none' }} value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}>
+                              <option>Desk Setup</option><option>Lighting</option><option>Accessories</option><option>Streaming</option>
+                           </select>
                         </div>
                      </div>
 
-                     <div style={{ border: '1px solid #f3f4f6', padding: '1.5rem', borderRadius: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                           <h4 style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>Variations (Sizes / Designs)</h4>
-                           <button type="button" onClick={addVariationField} className="icon-btn" style={{ backgroundColor: '#f9fafb' }}><Plus size={16} /></button>
+                     <div>
+                        <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Product Narrative</label>
+                        <textarea required placeholder="Detailed premium description..." rows={4} style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none', resize: 'none' }} value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
+                     </div>
+
+                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div>
+                           <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Price (KES)</label>
+                           <input required placeholder="000" type="number" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 900, outline: 'none' }} value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: Number(e.target.value) })} />
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                           {newProduct.variations?.map((v, idx) => (
-                              <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 2fr auto', gap: '0.5rem', alignItems: 'center' }}>
-                                 <select
-                                    style={{ padding: '0.5rem', borderRadius: '0.5rem', fontSize: '0.75rem', border: '1px solid #eee' }}
-                                    value={v.type}
-                                    onChange={(e) => {
-                                       const updated = [...(newProduct.variations || [])];
-                                       updated[idx].type = e.target.value as any;
-                                       setNewProduct({ ...newProduct, variations: updated });
-                                    }}
-                                 >
-                                    <option>Size</option><option>Design</option><option>Color</option>
-                                 </select>
-                                 <input
-                                    placeholder="Value"
-                                    style={{ padding: '0.5rem', borderRadius: '0.5rem', fontSize: '0.75rem', border: '1px solid #eee' }}
-                                    value={v.value}
-                                    onChange={(e) => {
-                                       const updated = [...(newProduct.variations || [])];
-                                       updated[idx].value = e.target.value;
-                                       setNewProduct({ ...newProduct, variations: updated });
-                                    }}
-                                 />
-                                 <input
-                                    placeholder="Price"
-                                    type="number"
-                                    style={{ padding: '0.5rem', borderRadius: '0.5rem', fontSize: '0.75rem', border: '1px solid #eee' }}
-                                    value={v.price}
-                                    onChange={(e) => {
-                                       const updated = [...(newProduct.variations || [])];
-                                       updated[idx].price = Number(e.target.value);
-                                       setNewProduct({ ...newProduct, variations: updated });
-                                    }}
-                                 />
-                                 <input
-                                    placeholder="Image URL (optional)"
-                                    style={{ padding: '0.5rem', borderRadius: '0.5rem', fontSize: '0.75rem', border: '1px solid #eee' }}
-                                    value={v.image || ''}
-                                    onChange={(e) => {
-                                       const updated = [...(newProduct.variations || [])];
-                                       updated[idx].image = e.target.value;
-                                       setNewProduct({ ...newProduct, variations: updated });
-                                    }}
-                                 />
-                                 <button type="button" onClick={() => setNewProduct({ ...newProduct, variations: newProduct.variations?.filter((_, i) => i !== idx) })} style={{ color: '#ef4444' }}><X size={14} /></button>
-                              </div>
-                           ))}
+                        <div>
+                           <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Starting Batch Size</label>
+                           <input required placeholder="0" type="number" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 900, outline: 'none' }} value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: Number(e.target.value) })} />
                         </div>
                      </div>
-                     <div style={{ display: 'flex', gap: '1rem', paddingTop: '1rem' }}>
-                        <button type="submit" className="btn-primary" style={{ flexGrow: 1, borderRadius: '1rem', padding: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.75rem' }}>
-                           {editingProductId ? 'Save Changes' : 'Publish to Store'}
+
+                     <div style={{ display: 'flex', gap: '1rem', paddingTop: '2rem' }}>
+                        <button type="submit" style={{ flexGrow: 1, padding: '1.5rem', borderRadius: '16px', background: '#000', color: '#fff', fontWeight: 900, textTransform: 'uppercase', border: 'none', cursor: 'pointer', letterSpacing: '0.1em' }}>
+                           {editingProductId ? 'SYNC CHANGES' : 'PUBLISH TO STORE'}
                         </button>
-                        <button type="button" onClick={() => { setShowProductForm(false); setEditingProductId(null); }} style={{ padding: '0 2rem', borderRadius: '1rem', fontWeight: 700, backgroundColor: '#f3f4f6' }}>Cancel</button>
+                        <button type="button" onClick={() => { setShowProductForm(false); setEditingProductId(null); }} style={{ padding: '0 3rem', borderRadius: '16px', border: '1.5px solid #000', background: 'transparent', fontWeight: 900, cursor: 'pointer' }}>CANCEL</button>
                      </div>
                   </form>
                </div>
             </div>
          )}
+
          {/* Shipping Label Modal */}
          {selectedOrderForLabel && (
-            <div className="admin-modal-overlay">
+            <div className="admin-modal-overlay" style={{ background: 'rgba(0,0,0,0.9)' }}>
                <div className="admin-modal-backdrop" onClick={() => setSelectedOrderForLabel(null)} />
-               <div className="admin-modal-content" style={{ maxWidth: '400px', backgroundColor: 'white', padding: '40px', borderRadius: '0', position: 'relative' }}>
-                  <button onClick={() => setSelectedOrderForLabel(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
-                  <div id="shipping-label" style={{ border: '2px solid black', padding: '20px', backgroundColor: 'white', color: 'black', fontFamily: 'monospace' }}>
-                     <div style={{ borderBottom: '2px solid black', paddingBottom: '10px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontWeight: 900, fontSize: '1.5rem' }}>DEENICE</div>
-                        <div style={{ fontSize: '0.75rem' }}>ORD #{selectedOrderForLabel.id.toUpperCase()}</div>
-                     </div>
-
-                     <div style={{ marginBottom: '20px' }}>
-                        <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#666' }}>Shipping To:</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 900, marginTop: '4px' }}>{selectedOrderForLabel.userId}</div>
-                        <div style={{ fontSize: '0.875rem', marginTop: '4px' }}>{selectedOrderForLabel.hometown}</div>
-                     </div>
-
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
-                        <div>
-                           <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#666' }}>Total KES:</div>
-                           <div style={{ fontSize: '1rem', fontWeight: 900 }}>{selectedOrderForLabel.totalAmount.toLocaleString()}</div>
+               <div className="admin-modal-content" style={{ maxWidth: '440px', background: '#fff', padding: '0', borderRadius: '0', border: 'none' }}>
+                  <div id="shipping-label" style={{ padding: '40px', background: '#fff' }}>
+                     <div style={{ border: '4px solid #000', padding: '32px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+                           <span style={{ fontWeight: 900, fontSize: '2rem', letterSpacing: '-0.05em' }}>DEENICE</span>
+                           <span style={{ fontWeight: 900, fontSize: '0.875rem' }}>ORD {selectedOrderForLabel.id.toUpperCase()}</span>
                         </div>
-                        <div>
-                           <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', fontWeight: 900, color: '#666' }}>Payment:</div>
-                           <div style={{ fontSize: '1rem', fontWeight: 900 }}>{selectedOrderForLabel.paymentStatus}</div>
+
+                        <div style={{ marginBottom: '40px' }}>
+                           <div style={{ fontSize: '0.75rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '8px' }}>Recipient Account</div>
+                           <div style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1 }}>{selectedOrderForLabel.userId}</div>
                         </div>
-                     </div>
 
-                     <div style={{ background: 'black', color: 'white', padding: '10px', textAlign: 'center', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.1em' }}>
-                        SCAN TO VERIFY
-                     </div>
+                        <div style={{ marginBottom: '40px' }}>
+                           <div style={{ fontSize: '0.75rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '8px' }}>Destination Cluster</div>
+                           <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.hometown}</div>
+                        </div>
 
-                     <div style={{ marginTop: '20px', height: '40px', background: 'repeating-linear-gradient(90deg, black, black 4px, transparent 4px, transparent 8px)' }} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px', padding: '24px', background: '#000', color: '#fff' }}>
+                           <div>
+                              <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.6, textTransform: 'uppercase' }}>Amount Duel</div>
+                              <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.totalAmount.toLocaleString()}</div>
+                           </div>
+                           <div>
+                              <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.6, textTransform: 'uppercase' }}>Payment Mode</div>
+                              <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.paymentStatus}</div>
+                           </div>
+                        </div>
+
+                        <div style={{ height: '80px', width: '100%', background: 'repeating-linear-gradient(90deg, #000, #000 4px, #fff 4px, #fff 8px)' }} />
+                        <div style={{ textAlign: 'center', marginTop: '1rem', fontWeight: 900, fontSize: '0.75rem' }}>VERIFIED BY DEENICE LABS</div>
+                     </div>
                   </div>
-
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '20px' }}>
-                     <button onClick={() => window.print()} className="btn-primary" style={{ flexGrow: 1 }}>
-                        <Printer size={16} style={{ marginRight: '8px' }} /> Print Label
+                  <div style={{ background: '#fafafa', padding: '1.5rem 40px', display: 'flex', gap: '1rem' }}>
+                     <button onClick={() => window.print()} style={{ flexGrow: 1, padding: '1rem', background: '#000', color: '#fff', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                        <Printer size={18} /> PRINT IDENTITY TAG
                      </button>
-                     <button onClick={() => setSelectedOrderForLabel(null)} className="btn-outline">Close</button>
+                     <button onClick={() => setSelectedOrderForLabel(null)} style={{ padding: '1rem 2rem', border: '1.5px solid #000', background: 'transparent', borderRadius: '12px', fontWeight: 900, cursor: 'pointer' }}>CLOSE</button>
                   </div>
                </div>
             </div>
@@ -798,3 +794,4 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 };
 
 export default AdminDashboard;
+

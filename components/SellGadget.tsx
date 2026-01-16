@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Camera, DollarSign, Loader, Upload, AlertCircle, Sparkles, Send } from 'lucide-react';
+import { Camera, DollarSign, Loader, Upload, AlertCircle, Sparkles, Send, ArrowRight } from 'lucide-react';
 import { User, GadgetListing } from '../types';
 import { Link } from 'react-router-dom';
 import { STORE_EMAIL } from '../constants';
@@ -42,17 +42,32 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
         );
     }
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const url = URL.createObjectURL(e.target.files[0]);
-            setImages([...images, url]);
+            try {
+                const base64 = await toBase64(e.target.files[0]);
+                setImages([...images, base64]);
+            } catch (err) {
+                console.error("Image conversion failed", err);
+            }
         }
     };
 
-    const handleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const url = URL.createObjectURL(e.target.files[0]);
-            setProofOfPurchase(url);
+            try {
+                const base64 = await toBase64(e.target.files[0]);
+                setProofOfPurchase(base64);
+            } catch (err) {
+                console.error("Proof conversion failed", err);
+            }
         }
     };
 
@@ -400,8 +415,8 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
                             </div>
                         </div>
 
-                        <button disabled={isSubmitting} className="confera-btn w-full mt-4">
-                            {isSubmitting ? <Loader className="animate-spin" /> : <>Send for Verification <ArrowRightIcon /></>}
+                        <button disabled={isSubmitting} className="confera-btn w-full mt-4 flex items-center justify-center gap-2">
+                            {isSubmitting ? <Loader className="animate-spin" /> : <>Send for Verification <ArrowRight size={20} /></>}
                         </button>
                     </form>
                 </div>
@@ -414,14 +429,4 @@ const SellGadget: React.FC<SellGadgetProps> = ({ user, onSubmit }) => {
     );
 };
 
-// Simple Arrow Right Icon Component for internal use to avoid huge imports if needed, 
-// or just use typicallucide import which we have at top.
-const ArrowRightIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
 export default SellGadget;
-
-
