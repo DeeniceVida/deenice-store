@@ -233,12 +233,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="admin-layout" style={{ backgroundColor: '#fcfcfc' }}>
          {/* Premium Top Navbar */}
          <header className="admin-header" style={{ borderBottom: '1.5px solid #000', padding: '1rem 2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
+            <div className="admin-header-main" style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <img src={LOGO_URL} style={{ height: '2.5rem', width: '2.5rem', filter: 'grayscale(1)' }} alt="Logo" />
                   <span style={{ fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.05em', textTransform: 'uppercase' }}>DEENICE<span style={{ opacity: 0.3 }}>.ADMIN</span></span>
                </div>
-               <nav style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+               <nav className="admin-nav">
                   {[
                      { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
                      { id: 'products', label: 'Inventory', icon: Package },

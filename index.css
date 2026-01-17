@@ -169,6 +169,8 @@ body {
     overflow-x: hidden;
     width: 100%;
     position: relative;
+    -webkit-overflow-scrolling: touch;
+    /* Safari smooth scroll */
 }
 
 /* Container */
@@ -179,9 +181,16 @@ body {
     width: 100%;
 }
 
+@media (max-width: 480px) {
+    .container {
+        padding: 0 var(--spacing-sm);
+    }
+}
+
 /* Typography Utilities */
 .text-gradient {
     background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-primary-dark) 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -382,6 +391,17 @@ body {
     padding: 0 var(--spacing-lg);
 }
 
+@media (max-width: 480px) {
+    .nav-wrapper {
+        padding: 0 var(--spacing-sm);
+        height: 60px;
+    }
+
+    .logo-container h3 {
+        font-size: 1.1rem;
+    }
+}
+
 .nav-content {
     display: flex;
     justify-content: space-between;
@@ -406,6 +426,17 @@ body {
     display: flex;
     gap: var(--spacing-md);
     align-items: center;
+}
+
+@media (max-width: 480px) {
+    .nav-actions {
+        gap: var(--spacing-xs);
+    }
+
+    .nav-actions .btn-sm {
+        padding: 6px 10px;
+        font-size: 0.65rem;
+    }
 }
 
 .icon-btn {
@@ -785,6 +816,48 @@ body {
     display: flex;
     gap: var(--spacing-md);
     align-items: center;
+}
+
+/* Admin Dashboard Fixes */
+.admin-header {
+    background-color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+}
+
+.admin-header-main {
+    flex-wrap: wrap;
+    gap: var(--spacing-md) !important;
+}
+
+.admin-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Hide scrollbar for cleaner look on mobile */
+}
+
+.admin-nav::-webkit-scrollbar {
+    display: none;
+}
+
+@media (max-width: 1024px) {
+    .admin-header-main {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: var(--spacing-md) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-header {
+        padding: 1rem !important;
+    }
 }
 
 .step-circle {
@@ -1210,6 +1283,7 @@ body {
     margin-bottom: var(--spacing-xl);
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     font-weight: 500;
