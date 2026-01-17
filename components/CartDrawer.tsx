@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { X, Minus, Plus, ShoppingBag, Trash2, ArrowRight, Smartphone, MapPin, Edit2, Copy, Check } from 'lucide-react';
+import { X, Minus, Plus, ShoppingBag, Trash2, ArrowRight, Smartphone, MapPin, Edit2, Copy, Check, Sparkles } from 'lucide-react';
 import { CartItem, User, Order } from '../types';
 import { WHATSAPP_NUMBER, MPESA_TILL_NUMBER, DELIVERY_ZONES, NAIROBI_DISTANCES } from '../constants';
+import * as gemini from '../services/gemini';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -20,6 +21,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, user, o
   const [deliveryType, setDeliveryType] = useState<'PICKUP' | 'DELIVERY'>('DELIVERY');
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [townSearch, setTownSearch] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const getDeliveryFee = () => {
     if (deliveryType === 'PICKUP') return 0;
@@ -59,6 +63,27 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
   };
 
   const towns = [...NAIROBI_DISTANCES.map(t => t.name), ...DELIVERY_ZONES.map(t => t.name)].sort();
+
+  const handleTownSearch = async (val: string) => {
+    setTownSearch(val);
+    if (val.length >= 2) {
+      const filteredLocal = towns.filter(t => t.toLowerCase().includes(val.toLowerCase())).slice(0, 3);
+      const aiSuggestions = await gemini.getTownSuggestions(val);
+      const combined = Array.from(new Set([...filteredLocal, ...aiSuggestions]));
+      setSuggestions(combined);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectTown = (town: string) => {
+    onUpdateUser({ hometown: town });
+    setIsEditingLocation(false);
+    setShowSuggestions(false);
+    setTownSearch('');
+  };
 
   if (!isOpen) return null;
 
@@ -128,19 +153,30 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
                     {deliveryType === 'DELIVERY' && user && (
                       <div style={{ background: '#f9fafb', padding: '1rem', borderRadius: '16px' }}>
                         {isEditingLocation ? (
-                          <div>
-                            <select
-                              style={{ width: '100%', background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
-                              value={user.hometown}
-                              onChange={(e) => {
-                                onUpdateUser({ hometown: e.target.value });
-                                setIsEditingLocation(false);
-                              }}
-                            >
-                              {towns.map(town => (
-                                <option key={town} value={town}>{town}</option>
-                              ))}
-                            </select>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              autoFocus
+                              type="text"
+                              placeholder="Type your town (e.g. Westlands, Nakuru...)"
+                              style={{ width: '100%', background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '0.75rem', fontSize: '0.875rem', outline: 'none' }}
+                              value={townSearch}
+                              onChange={(e) => handleTownSearch(e.target.value)}
+                              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            />
+                            {showSuggestions && suggestions.length > 0 && (
+                              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', marginTop: '4px', zIndex: 10, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', overflow: 'hidden' }}>
+                                {suggestions.map(s => (
+                                  <button
+                                    key={s}
+                                    onClick={() => selectTown(s)}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', textAlign: 'left', border: 'none', background: 'none', fontSize: '0.875rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6' }}
+                                    className="hover-bg-gray"
+                                  >
+                                    <Sparkles size={12} style={{ marginRight: '8px', color: 'var(--color-primary)' }} /> {s}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.5rem' }}>

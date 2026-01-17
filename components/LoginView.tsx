@@ -1,7 +1,8 @@
 
 import React, { useState, useRef } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 import { User } from '../types';
+import * as gemini from '../services/gemini';
 import { DELIVERY_ZONES, NAIROBI_DISTANCES, ADMIN_EMAIL, ADMIN_PASSWORD } from '../constants';
 
 interface LoginViewProps {
@@ -20,6 +21,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [focusField, setFocusField] = useState<string | null>(null);
   const [loginError, setLoginError] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [townSearch, setTownSearch] = useState('');
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +71,27 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   };
 
   const towns = [...NAIROBI_DISTANCES.map(t => t.name), ...DELIVERY_ZONES.map(t => t.name)].sort();
+
+  const handleTownSearch = async (val: string) => {
+    setTownSearch(val);
+    setHometown(val);
+    if (val.length >= 2) {
+      const filteredLocal = towns.filter(t => t.toLowerCase().includes(val.toLowerCase())).slice(0, 3);
+      const aiSuggestions = await gemini.getTownSuggestions(val);
+      const combined = Array.from(new Set([...filteredLocal, ...aiSuggestions]));
+      setSuggestions(combined);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectTown = (town: string) => {
+    setHometown(town);
+    setTownSearch(town);
+    setShowSuggestions(false);
+  };
 
   const Character = ({ color, style, children, delay = "0ms" }: any) => {
     const isNodding = focusField === 'email';
@@ -237,19 +262,31 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             </div>
 
             {isRegistering && (
-              <div className="form-input-group">
-                <select
+              <div className="form-input-group" style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="Delivery Town (e.g. Westlands, Nakuru...)"
                   required
                   className="form-input"
-                  style={{ paddingLeft: '2rem', appearance: 'none', cursor: 'pointer' }}
+                  style={{ paddingLeft: '2rem' }}
                   value={hometown}
-                  onChange={(e) => setHometown(e.target.value)}
-                >
-                  <option value="" disabled>Delivery Town</option>
-                  {towns.map(town => (
-                    <option key={town} value={town}>{town}</option>
-                  ))}
-                </select>
+                  onChange={(e) => handleTownSearch(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1.5px solid #000', borderRadius: '12px', marginTop: '4px', zIndex: 100, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', overflow: 'hidden' }}>
+                    {suggestions.map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => selectTown(s)}
+                        style={{ width: '100%', padding: '0.75rem 1rem', textAlign: 'left', border: 'none', background: 'none', fontSize: '0.875rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: '8px' }}
+                      >
+                        <Sparkles size={12} style={{ color: '#6210CC' }} /> {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

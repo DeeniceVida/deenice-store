@@ -6,6 +6,30 @@ import { Product } from "../types";
 const API_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY || (window as any).GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(API_KEY);
 
+export const getTownSuggestions = async (input: string): Promise<string[]> => {
+    if (!API_KEY || !input || input.length < 2) return [];
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const prompt = `
+            Act as a location assistant for a Kenyan e-commerce store.
+            The user is typing a delivery town in Kenya. Current input: "${input}"
+            
+            Return a JSON array of up to 5 legitimate Kenyan town or neighborhood names that match this input.
+            Focus on popular areas in Nairobi and major towns across Kenya.
+            Return ONLY the JSON array of strings. No markdown, no explanation.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Gemini Town Suggestions Error:", error);
+        return [];
+    }
+};
+
 export const getSmartRecommendations = async (
     userPrefs: { budget: string; usage: string; category: string; vibe: string },
     products: Product[]

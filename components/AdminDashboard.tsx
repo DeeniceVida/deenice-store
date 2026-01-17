@@ -60,9 +60,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    adminName,
    adminAvatar,
    onUpdateAdminProfile,
-   offers
+   offers,
+   users
 }) => {
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'deals' | 'gadgets' | 'offers'>('dashboard');
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'deals' | 'gadgets' | 'offers' | 'customers'>('dashboard');
+   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
    const [showProductForm, setShowProductForm] = useState(false);
    const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<Order | null>(null);
 
@@ -224,6 +226,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                      { id: 'deals', label: 'Flash Sales', icon: Zap },
                      { id: 'gadgets', label: 'Approvals', icon: Smartphone },
                      { id: 'offers', label: 'Offers', icon: Bell },
+                     { id: 'customers', label: 'Clients', icon: Users },
                      { id: 'settings', label: 'Identity', icon: Settings },
                   ].map(tab => (
                      <button
@@ -694,6 +697,129 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                </div>
             )}
+
+            {activeTab === 'customers' && (
+               <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: selectedCustomerId ? '1fr 2fr' : '1fr', gap: '2rem' }}>
+                     {/* Customers List */}
+                     <div style={{ background: '#fff', border: '1.5px solid #000', borderRadius: '24px', overflow: 'hidden' }}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1.5px solid #000', background: '#fafafa' }}>
+                           <h3 style={{ fontWeight: 900, fontSize: '1.125rem' }}>Registered Clients</h3>
+                        </div>
+                        <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                           {users.map(customer => (
+                              <div
+                                 key={customer.id}
+                                 onClick={() => setSelectedCustomerId(customer.id)}
+                                 style={{
+                                    padding: '1.25rem',
+                                    borderBottom: '1px solid #f1f5f9',
+                                    cursor: 'pointer',
+                                    background: selectedCustomerId === customer.id ? '#f8fafc' : 'transparent',
+                                    borderLeft: selectedCustomerId === customer.id ? '4px solid #000' : '4px solid transparent',
+                                    transition: 'all 0.2s'
+                                 }}
+                              >
+                                 <div style={{ fontWeight: 800, fontSize: '0.875rem' }}>{customer.name}</div>
+                                 <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{customer.email}</div>
+                                 <div style={{ fontSize: '0.625rem', fontWeight: 900, marginTop: '4px', textTransform: 'uppercase' }}>{customer.hometown}</div>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+
+                     {/* Customer Detail View */}
+                     {selectedCustomerId ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                           {(() => {
+                              const customer = users.find(u => u.id === selectedCustomerId);
+                              if (!customer) return null;
+                              const customerOrders = orders.filter(o => o.userId === customer.id || o.userId === customer.name);
+                              const customerGadgets = gadgets.filter(g => g.sellerId === customer.id);
+                              const customerOffers = offers.filter(o => o.buyerEmail === customer.email);
+
+                              return (
+                                 <>
+                                    {/* Profile Header */}
+                                    <div style={{ background: '#000', color: '#fff', padding: '2.5rem', borderRadius: '32px', position: 'relative' }}>
+                                       <button onClick={() => setSelectedCustomerId(null)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}><X size={16} /></button>
+                                       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                          <div style={{ width: '5rem', height: '5rem', background: '#E3F77E', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 900, color: '#000' }}>
+                                             {customer.name.charAt(0)}
+                                          </div>
+                                          <div>
+                                             <h2 style={{ fontSize: '1.75rem', fontWeight: 900 }}>{customer.name}</h2>
+                                             <p style={{ opacity: 0.6, fontSize: '0.875rem' }}>{customer.email} • {customer.hometown}</p>
+                                          </div>
+                                       </div>
+                                    </div>
+
+                                    {/* Activity Grid */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                                       <div style={{ background: '#fff', border: '1.5px solid #000', padding: '1.5rem', borderRadius: '20px' }}>
+                                          <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Spent</div>
+                                          <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>KES {customerOrders.reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}</div>
+                                       </div>
+                                       <div style={{ background: '#fff', border: '1.5px solid #000', padding: '1.5rem', borderRadius: '20px' }}>
+                                          <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Gadgets Listed</div>
+                                          <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{customerGadgets.length} Devices</div>
+                                       </div>
+                                       <div style={{ background: '#fff', border: '1.5px solid #000', padding: '1.5rem', borderRadius: '20px' }}>
+                                          <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Market Offers</div>
+                                          <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{customerOffers.length} Sent</div>
+                                       </div>
+                                    </div>
+
+                                    {/* Detailed Lists Tabbed-like experience */}
+                                    <div style={{ background: '#fff', border: '1.5px solid #000', borderRadius: '24px', overflow: 'hidden' }}>
+                                       <div style={{ padding: '1.5rem', borderBottom: '1px solid #f1f5f9', fontWeight: 900, fontSize: '1rem' }}>Purchase History</div>
+                                       {customerOrders.length === 0 ? (
+                                          <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.4, fontWeight: 700 }}>No orders yet.</div>
+                                       ) : (
+                                          customerOrders.map(order => (
+                                             <div key={order.id} style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                   <div style={{ fontWeight: 800 }}>{order.id}</div>
+                                                   <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{new Date(order.createdAt).toLocaleDateString()}</div>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                   <div style={{ fontWeight: 900 }}>KES {order.totalAmount.toLocaleString()}</div>
+                                                   <div style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', color: order.paymentStatus === 'Paid' ? '#16a34a' : '#ef4444' }}>{order.paymentStatus}</div>
+                                                </div>
+                                             </div>
+                                          ))
+                                       )}
+                                    </div>
+
+                                    {customerGadgets.length > 0 && (
+                                       <div style={{ background: '#fff', border: '1.5px solid #000', borderRadius: '24px', overflow: 'hidden' }}>
+                                          <div style={{ padding: '1.5rem', borderBottom: '1px solid #f1f5f9', fontWeight: 900, fontSize: '1rem' }}>Listed Gadgets</div>
+                                          {customerGadgets.map(gadget => (
+                                             <div key={gadget.id} style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                <img src={gadget.images[0]} style={{ width: '3rem', height: '3rem', borderRadius: '8px', objectFit: 'cover' }} />
+                                                <div style={{ flexGrow: 1 }}>
+                                                   <div style={{ fontWeight: 800 }}>{gadget.deviceName}</div>
+                                                   <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>Price: KES {gadget.price.toLocaleString()}</div>
+                                                </div>
+                                                <span style={{ fontSize: '0.625rem', fontWeight: 900, padding: '4px 8px', borderRadius: '4px', background: '#f1f5f9' }}>{gadget.status}</span>
+                                             </div>
+                                          ))}
+                                       </div>
+                                    )}
+                                 </>
+                              );
+                           })()}
+                        </div>
+                     ) : (
+                        <div style={{ border: '2px dashed #000', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', opacity: 0.3 }}>
+                           <Users size={48} style={{ marginBottom: '1rem' }} />
+                           <p style={{ fontWeight: 900, textTransform: 'uppercase' }}>Select a client to view diagnostics</p>
+                        </div>
+                     )}
+                  </div>
+               </div>
+            )}
+
          </main>
 
          {/* Product Form Modal */}

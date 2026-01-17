@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
-import { Product, Order, GadgetListing, Offer, Deal } from '../types';
+import { Product, Order, GadgetListing, Offer, Deal, User } from '../types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -167,4 +167,15 @@ export const deleteDeal = async (id: string) => {
         .eq('id', id);
 
     if (error) throw error;
+};
+
+// --- Users ---
+export const getUsers = async (): Promise<User[]> => {
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data as User[];
 };

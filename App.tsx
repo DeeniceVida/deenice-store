@@ -55,29 +55,54 @@ const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [adminProfile, setAdminProfile] = useState({ adminName: 'Andriano Darwin', adminAvatar: 'https://i.pravatar.cc/150?u=admin' });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prodData, orderData, gadgetData, offerData, configData, dealData] = await Promise.all([
+        const results = await Promise.allSettled([
           db.getProducts(),
           db.getOrders(),
           db.getGadgetListings(),
           db.getOffers(),
           db.getStoreConfig(),
-          db.getDeals()
+          db.getDeals(),
+          db.getUsers()
         ]);
-        setProducts(prodData);
-        setOrders(orderData);
-        setGadgets(gadgetData);
-        setOffers(offerData);
-        setDeals(dealData || []);
-        if (configData) {
-          setAdminProfile({ adminName: configData.adminName, adminAvatar: configData.adminAvatar });
+
+        if (results[0].status === 'fulfilled') setProducts(results[0].value);
+        else console.error('Error fetching products:', results[0].reason);
+
+        if (results[1].status === 'fulfilled') setOrders(results[1].value);
+        else console.error('Error fetching orders:', results[1].reason);
+
+        if (results[2].status === 'fulfilled') setGadgets(results[2].value);
+        else console.error('Error fetching gadgets:', results[2].reason);
+
+        if (results[3].status === 'fulfilled') setOffers(results[3].value);
+        else console.error('Error fetching offers:', results[3].reason);
+
+        if (results[4].status === 'fulfilled') {
+          const configData = results[4].value;
+          if (configData) {
+            setAdminProfile({ adminName: configData.adminName, adminAvatar: configData.adminAvatar });
+          }
+        } else {
+          console.error('Error fetching store config:', results[4].reason);
         }
+
+        if (results[5].status === 'fulfilled') setDeals(results[5].value || []);
+        else {
+          console.error('Error fetching deals:', results[5].reason);
+          setDeals([]);
+        }
+
+        if (results[6].status === 'fulfilled') setUsers(results[6].value || []);
+        else console.error('Error fetching users:', results[6].reason);
+
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('Unexpected error fetching data:', err);
       }
     };
     fetchData();
@@ -393,7 +418,7 @@ const App: React.FC = () => {
               <AdminDashboard
                 products={products}
                 orders={orders}
-                users={[]}
+                users={users}
                 deals={deals}
                 gadgets={gadgets}
                 offers={offers}
