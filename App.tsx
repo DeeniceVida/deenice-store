@@ -38,7 +38,10 @@ const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isBuyCoffeeOpen, setIsBuyCoffeeOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('deenice_user');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuLinkStyle = {
     display: 'flex',
@@ -107,6 +110,15 @@ const App: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  // Persist user session
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('deenice_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('deenice_user');
+    }
+  }, [user]);
 
   const handleUpdateAdminProfile = async (name: string, avatar: string) => {
     try {

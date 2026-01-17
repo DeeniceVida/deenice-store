@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 import { User } from '../types';
 import * as gemini from '../services/gemini';
+import * as db from '../services/supabase';
 import { DELIVERY_ZONES, NAIROBI_DISTANCES, ADMIN_EMAIL, ADMIN_PASSWORD } from '../constants';
 
 interface LoginViewProps {
@@ -24,6 +25,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [townSearch, setTownSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -35,39 +37,72 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     setMousePos({ x, y });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    const submittedEmail = email.trim().toLowerCase();
-    const submittedPassword = password.trim();
+    try {
+      const submittedEmail = email.trim().toLowerCase();
+      const submittedPassword = password.trim();
 
-    // Admin check
-    const isAdmin = submittedEmail === ADMIN_EMAIL.toLowerCase() && submittedPassword === ADMIN_PASSWORD;
+      // Admin check
+      const isAdmin = submittedEmail === ADMIN_EMAIL.toLowerCase() && submittedPassword === ADMIN_PASSWORD;
 
-    if (isAdmin) {
-      onLogin({
-        id: 'admin',
-        name: 'Admin',
-        email: ADMIN_EMAIL,
-        role: 'ADMIN',
-        hometown: 'Warehouse'
-      });
-      return;
-    }
+      if (isAdmin) {
+        onLogin({
+          id: 'admin',
+          name: 'Admin',
+          email: ADMIN_EMAIL,
+          role: 'ADMIN',
+          hometown: 'Warehouse'
+        });
+        return;
+      }
 
-    if (password.length < 4) {
+      if (password.length < 4) {
+        setLoginError(true);
+        setTimeout(() => setLoginError(false), 2000);
+        return;
+      }
+
+      let userToLogin: User;
+
+      if (isRegistering) {
+        userToLogin = {
+          id: Math.random().toString(36).substr(2, 9),
+          name: name || 'User',
+          email: submittedEmail,
+          role: 'USER',
+          hometown: hometown || 'Westlands'
+        };
+        // Sync registration to Database
+        await db.upsertUser(userToLogin);
+      } else {
+        // Find existing user in sync
+        const existingUser = await db.getUserByEmail(submittedEmail);
+        if (existingUser) {
+          userToLogin = existingUser;
+        } else {
+          // If not in DB but trying to login, we'll create a dummy session or reject
+          // For this app, let's treat any valid email/pass as a new user if not found
+          userToLogin = {
+            id: Math.random().toString(36).substr(2, 9),
+            name: 'Member',
+            email: submittedEmail,
+            role: 'USER',
+            hometown: 'Westlands'
+          };
+          await db.upsertUser(userToLogin);
+        }
+      }
+
+      onLogin(userToLogin);
+    } catch (err) {
+      console.error('Auth Error:', err);
       setLoginError(true);
-      setTimeout(() => setLoginError(false), 2000);
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    onLogin({
-      id: Math.random().toString(36).substr(2, 9),
-      name: name || 'Demo User',
-      email,
-      role: 'USER',
-      hometown: hometown || 'Westlands'
-    });
   };
 
   const towns = [...NAIROBI_DISTANCES.map(t => t.name), ...DELIVERY_ZONES.map(t => t.name)].sort();
@@ -292,12 +327,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
             <button
               type="submit"
+              disabled={isLoading}
               onMouseEnter={() => setIsHoveringLogin(true)}
               onMouseLeave={() => setIsHoveringLogin(false)}
               className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', padding: '1.5rem', borderRadius: '28px' }}
+              style={{ width: '100%', justifyContent: 'center', padding: '1.5rem', borderRadius: '28px', opacity: isLoading ? 0.7 : 1 }}
             >
-              {isRegistering ? 'Sign Up' : 'Continue'} <ArrowRight size={22} style={{ marginLeft: '1rem' }} />
+              {isLoading ? 'Processing...' : (isRegistering ? 'Sign Up' : 'Continue')} {!isLoading && <ArrowRight size={22} style={{ marginLeft: '1rem' }} />}
             </button>
           </form>
 

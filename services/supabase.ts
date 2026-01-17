@@ -174,8 +174,29 @@ export const getUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase
         .from('users')
         .select('*')
-        .order('name', { ascending: true });
+        .order('createdAt', { ascending: false });
 
     if (error) throw error;
     return data as User[];
+};
+
+export const upsertUser = async (user: User) => {
+    const { data, error } = await supabase
+        .from('users')
+        .upsert([user], { onConflict: 'email' })
+        .select();
+
+    if (error) throw error;
+    return data[0];
+};
+
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email.toLowerCase().trim())
+        .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
+    return data as User | null;
 };
