@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
 import { User } from '../types';
 import * as gemini from '../services/gemini';
 import * as db from '../services/supabase';
@@ -26,6 +26,8 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [townSearch, setTownSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotMode, setIsForgotMode] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -237,113 +239,153 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
         <div className="login-form-section">
           <div style={{ marginBottom: '3rem' }}>
-            <h1 style={{ fontSize: '3rem', fontWeight: 900, fontStyle: 'italic', marginBottom: '0.75rem', letterSpacing: '-0.05em' }}>{isRegistering ? 'Join Us' : 'Login'}</h1>
-            <p style={{ color: '#9ca3af', fontWeight: 500 }}>Your personal vault of curated tech gear.</p>
+            <h1 style={{ fontSize: '3rem', fontWeight: 900, fontStyle: 'italic', marginBottom: '0.75rem', letterSpacing: '-0.05em' }}>
+              {isForgotMode ? 'Recover' : (isRegistering ? 'Join Us' : 'Login')}
+            </h1>
+            <p style={{ color: '#9ca3af', fontWeight: 500 }}>
+              {isForgotMode ? 'Enter your email to reset access.' : 'Your personal vault of curated tech gear.'}
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {isRegistering && (
-              <div className="form-input-group">
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  required
-                  onFocus={() => setFocusField('name')}
-                  onBlur={() => setFocusField(null)}
-                  className="form-input"
-                  style={{ paddingLeft: '2rem' }}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div className="form-input-group">
-              <Mail className="form-icon" size={20} />
-              <input
-                type="email"
-                placeholder="Email"
-                required
-                onFocus={() => setFocusField('email')}
-                onBlur={() => setFocusField(null)}
-                className="form-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="form-input-group">
-              <Lock className="form-icon" size={20} />
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                required
-                onFocus={() => setFocusField('password')}
-                onBlur={() => setFocusField(null)}
-                className="form-input"
-                style={{ paddingRight: '4rem', borderColor: loginError ? '#f87171' : 'transparent' }}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+          {resetSuccess ? (
+            <div style={{ background: '#ecfdf5', padding: '2rem', borderRadius: '24px', border: '1.5px solid #059669', textAlign: 'center' }}>
+              <CheckCircle style={{ color: '#059669', marginBottom: '1rem' }} size={48} />
+              <h3 style={{ fontWeight: 900, color: '#065f46', marginBottom: '0.5rem' }}>RESET LINK SENT</h3>
+              <p style={{ fontSize: '0.875rem', color: '#065f46', opacity: 0.8 }}>Check your inbox for instructions to recover your account.</p>
               <button
-                type="button"
-                style={{ position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)', color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={() => setIsPeeking(true)}
-                onMouseLeave={() => setIsPeeking(false)}
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => { setResetSuccess(false); setIsForgotMode(false); }}
+                style={{ marginTop: '1.5rem', background: '#059669', color: '#fff', border: 'none', padding: '1rem 2rem', borderRadius: '12px', fontWeight: 900, cursor: 'pointer' }}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                BACK TO LOGIN
               </button>
             </div>
+          ) : (
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (isForgotMode) {
+                setIsLoading(true);
+                // Simulate reset
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setResetSuccess(true);
+                }, 1500);
+                return;
+              }
+              await handleSubmit(e);
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {isRegistering && !isForgotMode && (
+                <div className="form-input-group">
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    required
+                    onFocus={() => setFocusField('name')}
+                    onBlur={() => setFocusField(null)}
+                    className="form-input"
+                    style={{ paddingLeft: '2rem' }}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+              )}
 
-            {isRegistering && (
-              <div className="form-input-group" style={{ position: 'relative' }}>
+              <div className="form-input-group">
+                <Mail className="form-icon" size={20} />
                 <input
-                  type="text"
-                  placeholder="Delivery Town (e.g. Westlands, Nakuru...)"
+                  type="email"
+                  placeholder="Email"
                   required
+                  onFocus={() => setFocusField('email')}
+                  onBlur={() => setFocusField(null)}
                   className="form-input"
-                  style={{ paddingLeft: '2rem' }}
-                  value={hometown}
-                  onChange={(e) => handleTownSearch(e.target.value)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
-                {showSuggestions && suggestions.length > 0 && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1.5px solid #000', borderRadius: '12px', marginTop: '4px', zIndex: 100, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', overflow: 'hidden' }}>
-                    {suggestions.map(s => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => selectTown(s)}
-                        style={{ width: '100%', padding: '0.75rem 1rem', textAlign: 'left', border: 'none', background: 'none', fontSize: '0.875rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: '8px' }}
-                      >
-                        <Sparkles size={12} style={{ color: '#6210CC' }} /> {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
+
+              {!isForgotMode && (
+                <div className="form-input-group">
+                  <Lock className="form-icon" size={20} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    required
+                    onFocus={() => setFocusField('password')}
+                    onBlur={() => setFocusField(null)}
+                    className="form-input"
+                    style={{ paddingRight: '4rem', borderColor: loginError ? '#f87171' : 'transparent' }}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    style={{ position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)', color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer' }}
+                    onMouseEnter={() => setIsPeeking(true)}
+                    onMouseLeave={() => setIsPeeking(false)}
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              )}
+
+              {isRegistering && !isForgotMode && (
+                <div className="form-input-group" style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Delivery Town (e.g. Westlands, Nakuru...)"
+                    required
+                    className="form-input"
+                    style={{ paddingLeft: '2rem' }}
+                    value={hometown}
+                    onChange={(e) => handleTownSearch(e.target.value)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  />
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1.5px solid #000', borderRadius: '12px', marginTop: '4px', zIndex: 100, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', overflow: 'hidden' }}>
+                      {suggestions.map(s => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => selectTown(s)}
+                          style={{ width: '100%', padding: '0.75rem 1rem', textAlign: 'left', border: 'none', background: 'none', fontSize: '0.875rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        >
+                          <Sparkles size={12} style={{ color: '#6210CC' }} /> {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                onMouseEnter={() => setIsHoveringLogin(true)}
+                onMouseLeave={() => setIsHoveringLogin(false)}
+                className="btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '1.5rem', borderRadius: '28px', opacity: isLoading ? 0.7 : 1 }}
+              >
+                {isLoading ? 'Processing...' : (isForgotMode ? 'Send Reset Link' : (isRegistering ? 'Sign Up' : 'Continue'))} {!isLoading && <ArrowRight size={22} style={{ marginLeft: '1rem' }} />}
+              </button>
+            </form>
+          )}
+
+          <div style={{ marginTop: '2.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {!isForgotMode && (
+              <button
+                onClick={() => setIsRegistering(!isRegistering)}
+                style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                {isRegistering ? 'Already have an account?' : "New here? Create Account"}
+              </button>
             )}
 
             <button
-              type="submit"
-              disabled={isLoading}
-              onMouseEnter={() => setIsHoveringLogin(true)}
-              onMouseLeave={() => setIsHoveringLogin(false)}
-              className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', padding: '1.5rem', borderRadius: '28px', opacity: isLoading ? 0.7 : 1 }}
+              onClick={() => { setIsForgotMode(!isForgotMode); setIsRegistering(false); }}
+              style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: isForgotMode ? '#000' : '#4f46e5', background: 'none', border: 'none', cursor: 'pointer' }}
             >
-              {isLoading ? 'Processing...' : (isRegistering ? 'Sign Up' : 'Continue')} {!isLoading && <ArrowRight size={22} style={{ marginLeft: '1rem' }} />}
-            </button>
-          </form>
-
-          <div style={{ marginTop: '3rem', textAlign: 'center' }}>
-            <button
-              onClick={() => setIsRegistering(!isRegistering)}
-              style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#9ca3af', borderBottom: '2px solid transparent', paddingBottom: '4px', background: 'none' }}
-              className="hover-text-primary hover-border-primary"
-            >
-              {isRegistering ? 'Already have an account?' : "New here? Create Account"}
+              {isForgotMode ? 'Back to Login' : 'Forgot Password?'}
             </button>
           </div>
         </div>

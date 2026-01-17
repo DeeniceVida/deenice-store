@@ -5,7 +5,7 @@ import {
    Search, Bell, Settings, LayoutDashboard, Zap, Plus, Trash2, Camera,
    ChevronRight, Share2, Download, Printer, LayoutGrid, Image as ImageIcon,
    MoreHorizontal, X, Smartphone, ArrowRight, Edit2, TrendingUp, TrendingDown,
-   Briefcase, Clock, MapPin, CheckCircle, XCircle
+   Briefcase, Clock, MapPin, CheckCircle, XCircle, Mail, Send
 } from 'lucide-react';
 import {
    BarChart,
@@ -63,7 +63,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    offers,
    users
 }) => {
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'deals' | 'gadgets' | 'offers' | 'customers'>('dashboard');
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'deals' | 'gadgets' | 'offers' | 'customers' | 'marketing'>('dashboard');
    const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
    const [showProductForm, setShowProductForm] = useState(false);
    const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<Order | null>(null);
@@ -209,6 +209,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       onDeleteDeal(dealId);
    };
 
+   const exportMarketingCSV = () => {
+      const headers = ['First Name', 'Last Name', 'Email', 'Hometown'];
+      const rows = users.map(u => {
+         const names = u.name.split(' ');
+         return [names[0], names.slice(1).join(' ') || '', u.email, u.hometown];
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8,"
+         + headers.join(",") + "\n"
+         + rows.map(e => e.join(",")).join("\n");
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `deenice_marketing_list_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+   };
+
    return (
       <div className="admin-layout" style={{ backgroundColor: '#fcfcfc' }}>
          {/* Premium Top Navbar */}
@@ -227,6 +247,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                      { id: 'gadgets', label: 'Approvals', icon: Smartphone },
                      { id: 'offers', label: 'Offers', icon: Bell },
                      { id: 'customers', label: 'Clients', icon: Users },
+                     { id: 'marketing', label: 'Marketing', icon: Mail },
                      { id: 'settings', label: 'Identity', icon: Settings },
                   ].map(tab => (
                      <button
@@ -816,6 +837,88 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                            <p style={{ fontWeight: 900, textTransform: 'uppercase' }}>Select a client to view diagnostics</p>
                         </div>
                      )}
+                  </div>
+               </div>
+            )}
+
+            {activeTab === 'marketing' && (
+               <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                     <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.4, marginBottom: '0.5rem' }}>Growth Engine</div>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 900 }}>Marketing & Broadcasts</h2>
+                     </div>
+                     <button onClick={exportMarketingCSV} className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '1rem 2rem', borderRadius: '16px' }}>
+                        <Download size={18} /> EXPORT EMAILS (CSV)
+                     </button>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
+                     {/* User Selection List */}
+                     <div style={{ background: '#fff', border: '1.5px solid #000', borderRadius: '32px', overflow: 'hidden' }}>
+                        <div style={{ padding: '2rem', borderBottom: '1.5px solid #000', background: '#fafafa', display: 'flex', justifyContent: 'space-between' }}>
+                           <h3 style={{ fontWeight: 900 }}>Recipients ({users.length})</h3>
+                           <div style={{ fontSize: '0.75rem', fontWeight: 900, opacity: 0.5 }}>NAME & EMAIL COLLECTION</div>
+                        </div>
+                        <div style={{ maxHeight: '500px', overflowY: 'auto', padding: '1rem' }}>
+                           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                              <thead>
+                                 <tr style={{ textAlign: 'left', borderBottom: '1.5px solid #eee' }}>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>FIRST NAME</th>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 900, opacity: 0.4 }}>EMAIL ADDRESS</th>
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 {users.map(u => (
+                                    <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                       <td style={{ padding: '1rem', fontWeight: 800 }}>{u.name.split(' ')[0]}</td>
+                                       <td style={{ padding: '1rem', fontWeight: 700, color: '#64748b' }}>{u.email}</td>
+                                    </tr>
+                                 ))}
+                              </tbody>
+                           </table>
+                        </div>
+                     </div>
+
+                     {/* Broadcast Composer */}
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ background: '#000', color: '#fff', padding: '2.5rem', borderRadius: '32px' }}>
+                           <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <Send size={24} style={{ color: '#E3F77E' }} /> Broadcast Composer
+                           </h3>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                              <div>
+                                 <label style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.5rem', display: 'block' }}>Email Subject</label>
+                                 <input
+                                    type="text"
+                                    placeholder="e.g. 🎒 New Arrivals: Check what just landed!"
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '1.25rem', borderRadius: '16px', color: '#fff', fontWeight: 700 }}
+                                 />
+                              </div>
+                              <div>
+                                 <label style={{ fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.5rem', display: 'block' }}>Custom Message</label>
+                                 <textarea
+                                    rows={8}
+                                    placeholder="Hey {First Name}, we've got something special for you..."
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '1.25rem', borderRadius: '16px', color: '#fff', fontWeight: 700, resize: 'none' }}
+                                 ></textarea>
+                              </div>
+                              <button
+                                 onClick={() => alert('Campaign drafted! Use the exported CSV to send via your preferred mailer (Mailchimp/SendGrid).')}
+                                 style={{ background: '#E3F77E', color: '#000', border: 'none', padding: '1.5rem', borderRadius: '16px', fontWeight: 900, cursor: 'pointer', transition: 'transform 0.2s' }}
+                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                              >
+                                 PREPARE CAMPAIGN
+                              </button>
+                           </div>
+                        </div>
+                        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+                           <p style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.6, lineHeight: 1.5 }}>
+                              <strong>Tip:</strong> Use the Export button to get an organized list of first names and emails. Perfect for personalized marketing campaigns on Mailchimp or WhatsApp Business.
+                           </p>
+                        </div>
+                     </div>
                   </div>
                </div>
             )}
