@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowUpRight, Sparkles, Monitor, Cpu, Globe, Zap, CircuitBoard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import HeroIllustration from './FulfillmentAnimation';
+
 const Hero: React.FC = () => {
   const heroRef = useRef<HTMLElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -136,112 +138,9 @@ const Hero: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Interactive Visual */}
-        <div style={{ position: 'relative', height: '600px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', ...parallaxStyle(0.5) }}>
-
-          {/* Floating Tech Elements */}
-          <div style={{ position: 'absolute', top: -50, right: 50, zIndex: 0, opacity: 0.2 }}>
-            <CircuitBoard size={300} color="var(--color-primary)" />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '4rem' }}>
-            <div
-              className="glass-panel"
-              style={{
-                padding: '1.5rem',
-                borderRadius: '32px',
-                transition: 'transform 0.3s ease',
-                transform: `translateY(${mousePos.y * -10}px)`
-              }}
-            >
-              <div style={{ aspectRatio: '1/1', background: '#f0f0f0', borderRadius: '24px', overflow: 'hidden', marginBottom: '1.5rem', position: 'relative' }}>
-                <img src="https://picsum.photos/seed/desksetup/600/600" alt="Setup" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', top: 10, right: 10, background: 'white', padding: 8, borderRadius: '50%' }}>
-                  <Monitor size={16} />
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, fontStyle: 'italic', fontSize: '0.875rem' }}>CURATED</span>
-                <div className="badge-outline">PREMIUM</div>
-              </div>
-            </div>
-
-            <Link
-              to="/deals"
-              className="glass-panel"
-              style={{
-                background: 'var(--color-accent)',
-                padding: '2rem',
-                borderRadius: '40px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                height: '220px',
-                textDecoration: 'none',
-                color: 'var(--color-text-primary)',
-                position: 'relative',
-                overflow: 'hidden',
-                ...parallaxStyle(1)
-              }}
-            >
-              <div style={{ position: 'absolute', top: -20, right: -20, width: '100px', height: '100px', background: 'rgba(255,255,255,0.4)', borderRadius: '50%', filter: 'blur(20px)' }} />
-              <Zap size={32} strokeWidth={2.5} />
-              <div>
-                <span style={{ display: 'block', fontSize: '2rem', fontWeight: 900, fontStyle: 'italic', lineHeight: 1 }}>HOT<br />DEALS</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', opacity: 0.7 }}>Daily Drops</span>
-              </div>
-            </Link>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div
-              className="glass-panel"
-              style={{
-                background: 'var(--color-text-primary)',
-                color: 'white',
-                padding: '2rem',
-                borderRadius: '40px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                height: '220px',
-                position: 'relative',
-                overflow: 'hidden',
-                ...parallaxStyle(-0.5)
-              }}
-            >
-              <Globe size={32} style={{ color: 'var(--color-primary)' }} />
-              <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-              <div>
-                <span style={{ display: 'block', fontSize: '1.75rem', fontWeight: 900, fontStyle: 'italic', lineHeight: 1.1 }}>GLOBAL<br />LOGISTICS</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-primary)' }}>USA • KENYA</span>
-              </div>
-            </div>
-
-            <div
-              className="glass-panel"
-              style={{
-                padding: '1.5rem',
-                borderRadius: '32px',
-                transform: `translateY(${mousePos.y * 10}px)`
-              }}
-            >
-              <div style={{ aspectRatio: '1/1', background: '#f0f0f0', borderRadius: '24px', overflow: 'hidden', marginBottom: '1.5rem', position: 'relative' }}>
-                <img src="https://picsum.photos/seed/curation/600/600" alt="Setup" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, fontStyle: 'italic', fontSize: '0.875rem' }}>TECH</span>
-                <div style={{ background: 'var(--color-primary)', padding: '6px', borderRadius: '12px', color: 'white' }}>
-                  <Cpu size={18} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Orbiting Elements */}
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(-50%, -50%)`, width: '120%', height: '120%', border: '1px solid rgba(179, 200, 239, 0.2)', borderRadius: '50%', zIndex: -1, animation: 'spin-slow 20s linear infinite' }} />
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(-50%, -50%)`, width: '140%', height: '140%', border: '1px dashed rgba(227, 247, 126, 0.3)', borderRadius: '50%', zIndex: -1, animation: 'spin-reverse 30s linear infinite' }} />
-
+        {/* Right Interactive Visual - Animation Component */}
+        <div style={{ ...parallaxStyle(0.5), width: '100%' }}>
+          <HeroIllustration />
         </div>
       </div>
     </section>
