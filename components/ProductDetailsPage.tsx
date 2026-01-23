@@ -196,11 +196,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                             <span style={{ fontSize: '0.875rem', color: 'var(--color-text-light)', fontWeight: 700 }}>shipping excl.</span>
                         </div>
 
-                        <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', lineHeight: '1.7', marginBottom: '40px', fontWeight: 500 }}>
-                            {product.description}
-                        </p>
-
-                        {/* Variants Section */}
+                        {/* Variants Section - MOVED UP */}
                         {product.variations && product.variations.length > 0 && (
                             <div style={{ marginBottom: '32px' }}>
                                 <label style={{ display: 'block', fontSize: '1rem', fontWeight: 800, marginBottom: '16px' }}>
@@ -210,7 +206,10 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                                     {product.variations.map((v) => (
                                         <button
                                             key={v.id}
-                                            onClick={() => setCurVar(v)}
+                                            onClick={() => {
+                                                setCurVar(v);
+                                                setIsDescOpen(false); // Auto-collapse description
+                                            }}
                                             style={{
                                                 padding: '14px 28px',
                                                 borderRadius: '12px',
@@ -230,7 +229,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                             </div>
                         )}
 
-                        {/* Colors Section (if applicable) */}
+                        {/* Colors Section (if applicable) - MOVED UP */}
                         {product.colors && product.colors.length > 1 && (
                             <div style={{ marginBottom: '32px' }}>
                                 <label style={{ display: 'block', fontSize: '1rem', fontWeight: 800, marginBottom: '16px' }}>
@@ -240,7 +239,10 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                                     {product.colors.map((color) => (
                                         <button
                                             key={color}
-                                            onClick={() => setSelectedColor(color)}
+                                            onClick={() => {
+                                                setSelectedColor(color);
+                                                setIsDescOpen(false); // Auto-collapse description
+                                            }}
                                             style={{
                                                 width: '40px',
                                                 height: '40px',
@@ -259,6 +261,10 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                                 </div>
                             </div>
                         )}
+
+                        <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', lineHeight: '1.7', marginBottom: '40px', fontWeight: 500 }}>
+                            {product.description}
+                        </p>
 
                         {/* Quantity & Actions */}
                         <div style={{ marginBottom: '40px' }}>
