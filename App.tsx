@@ -31,6 +31,7 @@ import BuyMeCoffee from './components/BuyMeCoffee';
 import SellGadget from './components/SellGadget';
 import WorkWithMe from './components/WorkWithMe';
 import GadgetMarketplace from './components/GadgetMarketplace';
+import ProductDetailsPage from './components/ProductDetailsPage';
 import { CartItem, Product, ProductVariation, User, Order, OrderStatus, PaymentStatus, Deal, GadgetListing, Offer } from './types';
 
 
@@ -446,6 +447,7 @@ const App: React.FC = () => {
             <Route path="/shop" element={<Shop onAddToCart={addToCart} products={products} searchQuery={searchQuery} categories={categories} />} />
             <Route path="/deals" element={<HotDeals products={products} deals={deals} onAddToCart={addToCart} />} />
             <Route path="/buy-for-me" element={<BuyForMe />} />
+            <Route path="/product/:id" element={<ProductDetailsPage products={products} onAddToCart={addToCart} />} />
             <Route path="/sell-gadget" element={<SellGadget user={user} onSubmit={handleSellGadget} />} />
             <Route path="/market" element={<GadgetMarketplace gadgets={gadgets} onOffer={handleCreateOffer} />} />
             <Route path="/work-with-me" element={<WorkWithMe />} />

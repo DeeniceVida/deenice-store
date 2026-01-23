@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import React, { useState } from 'react';
 import { ShoppingCart, Star, CheckCircle2, Search, Truck, ChevronDown } from 'lucide-react';
 import { Product, ProductVariation } from '../types';
 
