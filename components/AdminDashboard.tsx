@@ -15,13 +15,15 @@ import {
    CartesianGrid,
    Tooltip,
    ResponsiveContainer,
+   Area,
+   LineChart,
+   Line,
    PieChart,
    Pie,
    Cell,
-   AreaChart,
-   Area
+   AreaChart
 } from 'recharts';
-import { Product, Order, User, Deal, OrderStatus, PaymentStatus, GadgetListing, Offer, ProductVariation } from '../types';
+import { Product, Order, User, Deal, OrderStatus, PaymentStatus, GadgetListing, Offer, ProductVariation, Category } from '../types';
 import { LOGO_URL } from '../constants';
 
 interface AdminDashboardProps {
@@ -42,6 +44,9 @@ interface AdminDashboardProps {
    adminName: string;
    adminAvatar: string;
    onUpdateAdminProfile: (name: string, avatar: string) => void;
+   categories: Category[];
+   onAddCategory: (name: string) => void;
+   onDeleteCategory: (id: string) => void;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -61,15 +66,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    adminAvatar,
    onUpdateAdminProfile,
    offers,
-   users
+   users,
+   categories,
+   onAddCategory,
+   onDeleteCategory
 }) => {
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'deals' | 'gadgets' | 'offers' | 'customers' | 'marketing'>('dashboard');
+   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 1024);
+   React.useEffect(() => {
+      const handleResize = () => setIsMobile(window.innerWidth < 1024);
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+   }, []);
+
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'deals' | 'gadgets' | 'offers' | 'customers' | 'marketing' | 'categories'>('dashboard');
    const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
    const [showProductForm, setShowProductForm] = useState(false);
    const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<Order | null>(null);
 
    const [isAddingDeal, setIsAddingDeal] = useState(false);
-   const [dealForm, setDealForm] = useState({ product: '', discountPrice: '', endDate: '' });
+   const [dealForm, setDealForm] = useState({
+      product: '',
+      discountPrice: '',
+      endDate: '',
+      standaloneName: '',
+      standaloneDescription: '',
+      standaloneBasePrice: '',
+      standaloneImage: '',
+      standaloneColors: '',
+      standaloneStock: '',
+      standaloneVariations: [] as ProductVariation[]
+   });
    const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
    const [tempAdminName, setTempAdminName] = useState(adminName);
@@ -84,12 +110,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       name: '',
       description: '',
       price: 0,
-      category: 'Desk Setup',
+      category: '',
       images: [''],
       colors: [''],
       stock: 0,
       currency: 'KES',
-      variations: []
+      variations: [],
+      isHidden: false
    });
 
    // --- DATA ENGINE: Analytics & Reporting ---
@@ -165,12 +192,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
          name: '',
          description: '',
          price: 0,
-         category: 'Desk Setup',
+         category: '',
          images: [''],
          colors: [''],
          stock: 0,
          currency: 'KES',
-         variations: []
+         variations: [],
+         isHidden: false
       });
    };
 
@@ -191,16 +219,51 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    };
 
    const addDeal = () => {
-      if (dealForm.product && dealForm.discountPrice && dealForm.endDate) {
-         const newDeal: Deal = {
-            id: Math.random().toString(36).substr(2, 9),
-            productId: dealForm.product,
-            discountPrice: parseFloat(dealForm.discountPrice),
-            endsAt: new Date(dealForm.endDate).toISOString(),
-            isActive: true
-         };
-         onUpdateDeals([...deals, newDeal]);
-         setDealForm({ product: '', discountPrice: '', endDate: '' });
+      if (dealForm.discountPrice && dealForm.endDate) {
+         if (dealForm.product === 'standalone') {
+            const standaloneProduct: Product = {
+               id: `flash-${Math.random().toString(36).substr(2, 9)}`,
+               name: dealForm.standaloneName,
+               description: dealForm.standaloneDescription,
+               price: parseFloat(dealForm.standaloneBasePrice),
+               currency: 'KES',
+               images: [dealForm.standaloneImage],
+               colors: dealForm.standaloneColors.split(',').map(c => c.trim()),
+               stock: parseInt(dealForm.standaloneStock),
+               category: 'Flash Sale',
+               variations: dealForm.standaloneVariations || [],
+               isHidden: true
+            };
+            const newDeal: Deal = {
+               id: Math.random().toString(36).substr(2, 9),
+               discountPrice: parseFloat(dealForm.discountPrice),
+               endsAt: new Date(dealForm.endDate).toISOString(),
+               isActive: true,
+               standaloneProduct
+            };
+            onUpdateDeals([...deals, newDeal]);
+         } else if (dealForm.product) {
+            const newDeal: Deal = {
+               id: Math.random().toString(36).substr(2, 9),
+               productId: dealForm.product,
+               discountPrice: parseFloat(dealForm.discountPrice),
+               endsAt: new Date(dealForm.endDate).toISOString(),
+               isActive: true
+            };
+            onUpdateDeals([...deals, newDeal]);
+         }
+         setDealForm({
+            product: '',
+            discountPrice: '',
+            endDate: '',
+            standaloneName: '',
+            standaloneDescription: '',
+            standaloneBasePrice: '',
+            standaloneImage: '',
+            standaloneColors: '',
+            standaloneStock: '',
+            standaloneVariations: []
+         });
          setIsAddingDeal(false);
       }
    };
@@ -232,13 +295,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    return (
       <div className="admin-layout" style={{ backgroundColor: '#fcfcfc' }}>
          {/* Premium Top Navbar */}
-         <header className="admin-header" style={{ borderBottom: '1.5px solid #000', padding: '1rem 2rem' }}>
-            <div className="admin-header-main" style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <img src={LOGO_URL} style={{ height: '2.5rem', width: '2.5rem', filter: 'grayscale(1)' }} alt="Logo" />
-                  <span style={{ fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.05em', textTransform: 'uppercase' }}>DEENICE<span style={{ opacity: 0.3 }}>.ADMIN</span></span>
+         <header className="admin-header" style={{ borderBottom: '1.5px solid #000', padding: isMobile ? '1rem' : '1rem 2rem' }}>
+            <div className="admin-header-main" style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '1rem' : '3rem' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                     <img src={LOGO_URL} style={{ height: '2rem', width: '2rem', filter: 'grayscale(1)' }} alt="Logo" />
+                     <span style={{ fontWeight: 900, fontSize: '1rem', letterSpacing: '-0.05em', textTransform: 'uppercase' }}>DEENICE<span style={{ opacity: 0.3 }}>.ADMIN</span></span>
+                  </div>
+                  {isMobile && (
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem', borderRadius: '8px', background: '#fff', border: '1.5px solid #000' }}>
+                        <img src={adminAvatar} style={{ height: '1.5rem', width: '1.5rem', borderRadius: '6px', objectFit: 'cover' }} alt="Admin" />
+                     </div>
+                  )}
                </div>
-               <nav className="admin-nav">
+               <nav className="admin-nav" style={{
+                  display: 'flex',
+                  flexWrap: isMobile ? 'nowrap' : 'wrap',
+                  overflowX: isMobile ? 'auto' : 'visible',
+                  width: '100%',
+                  paddingBottom: isMobile ? '0.5rem' : '0',
+                  gap: '0.5rem'
+               }}>
                   {[
                      { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
                      { id: 'products', label: 'Inventory', icon: Package },
@@ -248,6 +325,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                      { id: 'offers', label: 'Offers', icon: Bell },
                      { id: 'customers', label: 'Clients', icon: Users },
                      { id: 'marketing', label: 'Marketing', icon: Mail },
+                     { id: 'categories', label: 'Categories', icon: LayoutGrid },
                      { id: 'settings', label: 'Identity', icon: Settings },
                   ].map(tab => (
                      <button
@@ -257,24 +335,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         style={{
                            display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem',
                            borderRadius: '8px', border: 'none', background: activeTab === tab.id ? '#000' : 'transparent',
-                           color: activeTab === tab.id ? '#fff' : '#64748b', fontSize: '0.8125rem', fontWeight: 700,
-                           transition: 'all 0.2s', cursor: 'pointer'
+                           color: activeTab === tab.id ? '#fff' : '#64748b', fontSize: '0.75rem', fontWeight: 700,
+                           transition: 'all 0.2s', cursor: 'pointer', whiteSpace: 'nowrap'
                         }}
                      >
-                        <tab.icon size={16} /> {tab.label}
+                        <tab.icon size={14} /> {tab.label}
                      </button>
                   ))}
                </nav>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', borderRadius: '12px', background: '#fff', border: '1.5px solid #000' }}>
-                  <img src={adminAvatar} style={{ height: '2rem', width: '2rem', borderRadius: '8px', objectFit: 'cover' }} alt="Admin" />
-                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-                     <span style={{ fontSize: '0.75rem', fontWeight: 900 }}>{adminName}</span>
-                     <span style={{ fontSize: '0.625rem', fontWeight: 700, opacity: 0.5 }}>STORE OWNER</span>
+            {!isMobile && (
+               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', borderRadius: '12px', background: '#fff', border: '1.5px solid #000' }}>
+                     <img src={adminAvatar} style={{ height: '2rem', width: '2rem', borderRadius: '8px', objectFit: 'cover' }} alt="Admin" />
+                     <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 900 }}>{adminName}</span>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 700, opacity: 0.5 }}>STORE OWNER</span>
+                     </div>
                   </div>
                </div>
-            </div>
+            )}
          </header>
 
          <main className="admin-main" style={{ padding: '2rem' }}>
@@ -297,7 +377,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {activeTab === 'dashboard' && (
                <>
                   {/* Stats Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                      {[
                         { label: 'Total Revenue', value: `KES ${stats.totalRevenue.toLocaleString()}`, change: '+24.5%', icon: DollarSign, positive: true },
                         { label: 'Product Sales', value: stats.totalSales, change: '+12%', icon: ShoppingBag, positive: true },
@@ -317,9 +397,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                      ))}
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
                      {/* Revenue Chart */}
-                     <div style={{ gridColumn: 'span 8', background: '#fff', border: '1.5px solid #000', padding: '2rem', borderRadius: '20px' }}>
+                     <div style={{ flex: '2 1 600px', background: '#fff', border: '1.5px solid #000', padding: '2rem', borderRadius: '20px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                            <h3 style={{ fontWeight: 900, fontSize: '1.25rem' }}>Revenue Analytics</h3>
                            <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -347,7 +427,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                      </div>
 
                      {/* Pie Chart */}
-                     <div style={{ gridColumn: 'span 4', background: '#fff', border: '1.5px solid #000', padding: '2rem', borderRadius: '20px' }}>
+                     <div style={{ flex: '1 1 300px', background: '#fff', border: '1.5px solid #000', padding: '2rem', borderRadius: '20px' }}>
                         <h3 style={{ fontWeight: 900, fontSize: '1.25rem', marginBottom: '2rem' }}>Category Mix</h3>
                         <div style={{ height: '20rem', position: 'relative' }}>
                            <ResponsiveContainer width="100%" height="100%">
@@ -546,7 +626,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {isAddingDeal && (
                      <div style={{ background: '#000', color: '#fff', padding: '2.5rem', marginBottom: '3rem', borderRadius: '32px' }}>
                         <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '2rem' }}>Configure Flash Event</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
                            <div>
                               <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>TARGET PRODUCT</label>
                               <select
@@ -555,11 +635,75 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                  onChange={(e) => setDealForm({ ...dealForm, product: e.target.value })}
                               >
                                  <option value="">-- Choose Item --</option>
+                                 <option value="standalone">+ Create NEW Standalone Product</option>
                                  {products.map(p => (
                                     <option key={p.id} value={p.id}>{p.name} (KES {p.price.toLocaleString()})</option>
                                  ))}
                               </select>
                            </div>
+
+                           {dealForm.product === 'standalone' && (
+                              <>
+                                 <div>
+                                    <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>PRODUCT NAME</label>
+                                    <input
+                                       type="text"
+                                       placeholder="e.g. iPhone 15 Pro Max (Flash)"
+                                       style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
+                                       value={dealForm.standaloneName}
+                                       onChange={(e) => setDealForm({ ...dealForm, standaloneName: e.target.value })}
+                                    />
+                                 </div>
+                                 <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>DESCRIPTION</label>
+                                    <textarea
+                                       placeholder="Brief flash sale description..."
+                                       style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none', resize: 'none' }}
+                                       value={dealForm.standaloneDescription}
+                                       onChange={(e) => setDealForm({ ...dealForm, standaloneDescription: e.target.value })}
+                                    />
+                                 </div>
+                                 <div>
+                                    <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>IMAGE URL</label>
+                                    <input
+                                       type="text"
+                                       placeholder="https://..."
+                                       style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
+                                       value={dealForm.standaloneImage}
+                                       onChange={(e) => setDealForm({ ...dealForm, standaloneImage: e.target.value })}
+                                    />
+                                 </div>
+                                 <div>
+                                    <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>COLORS (comma separated)</label>
+                                    <input
+                                       type="text"
+                                       placeholder="Natural Titanium, Blue..."
+                                       style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
+                                       value={dealForm.standaloneColors}
+                                       onChange={(e) => setDealForm({ ...dealForm, standaloneColors: e.target.value })}
+                                    />
+                                 </div>
+                                 <div>
+                                    <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>BASE PRICE (KES)</label>
+                                    <input
+                                       type="number"
+                                       style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
+                                       value={dealForm.standaloneBasePrice}
+                                       onChange={(e) => setDealForm({ ...dealForm, standaloneBasePrice: e.target.value })}
+                                    />
+                                 </div>
+                                 <div>
+                                    <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>STOCK</label>
+                                    <input
+                                       type="number"
+                                       style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
+                                       value={dealForm.standaloneStock}
+                                       onChange={(e) => setDealForm({ ...dealForm, standaloneStock: e.target.value })}
+                                    />
+                                 </div>
+                              </>
+                           )}
+
                            <div>
                               <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>FESTIVAL PRICE (KES)</label>
                               <input
@@ -588,7 +732,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
                      {deals.map(deal => {
-                        const product = products.find(p => p.id === deal.productId);
+                        const product = deal.standaloneProduct || products.find(p => p.id === deal.productId);
                         if (!product) return null;
                         return (
                            <div key={deal.id} style={{ background: '#fff', border: '1.5px solid #000', padding: '1.5rem', borderRadius: '24px', position: 'relative' }}>
@@ -923,6 +1067,61 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                </div>
             )}
 
+            {activeTab === 'categories' && (
+               <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                     <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.4, marginBottom: '0.5rem' }}>Inventory Taxonomy</div>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 900 }}>Product Categories</h2>
+                     </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '3rem' }}>
+                     {/* Add Category Form */}
+                     <div style={{ background: '#000', color: '#fff', padding: '2.5rem', borderRadius: '32px', height: 'fit-content' }}>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '2rem' }}>Add New Category</h3>
+                        <form onSubmit={(e) => {
+                           e.preventDefault();
+                           const fd = new FormData(e.currentTarget);
+                           const name = fd.get('name') as string;
+                           if (name) {
+                              onAddCategory(name);
+                              e.currentTarget.reset();
+                           }
+                        }}>
+                           <div style={{ marginBottom: '2rem' }}>
+                              <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, marginBottom: '0.75rem' }}>Category Name</label>
+                              <input
+                                 name="name"
+                                 required
+                                 placeholder="e.g. Gaming Peripherals"
+                                 type="text"
+                                 style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#1a1a1a', border: 'none', color: '#fff', fontWeight: 700, outline: 'none' }}
+                              />
+                           </div>
+                           <button type="submit" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#E3F77E', color: '#000', fontWeight: 900, border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              CREATE CATEGORY
+                           </button>
+                        </form>
+                     </div>
+
+                     {/* Categories List */}
+                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                        {categories.map(cat => (
+                           <div key={cat.id} style={{ background: '#fff', border: '1.5px solid #000', padding: '1.5rem', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontWeight: 800 }}>{cat.name}</span>
+                              <button
+                                 onClick={() => onDeleteCategory(cat.id)}
+                                 style={{ width: '2rem', height: '2rem', borderRadius: '8px', background: '#FEF2F2', color: '#ef4444', border: '1.5px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              >
+                                 <Trash2 size={16} />
+                              </button>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               </div>
+            )}
          </main>
 
          {/* Product Form Modal */}
@@ -940,9 +1139,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <div>
                            <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Curation Category</label>
                            <select style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none' }} value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}>
-                              <option>Desk Setup</option><option>Lighting</option><option>Accessories</option><option>Streaming</option>
+                              <option value="">-- Select Category --</option>
+                              {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                            </select>
                         </div>
+                     </div>
+
+                     <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' }}>
+                           <input type="checkbox" checked={newProduct.isHidden || false} onChange={e => setNewProduct({ ...newProduct, isHidden: e.target.checked })} style={{ width: '1.25rem', height: '1.25rem' }} />
+                           HIDDEN PRODUCT (Flash Sale Exclusive)
+                        </label>
+                     </div>
+
+                     <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' }}>
+                           <input type="checkbox" checked={newProduct.isHidden || false} onChange={e => setNewProduct({ ...newProduct, isHidden: e.target.checked })} style={{ width: '1.25rem', height: '1.25rem' }} />
+                           HIDDEN PRODUCT (Flash Sale Exclusive)
+                        </label>
                      </div>
 
                      <div>
@@ -1049,56 +1263,58 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                      </div>
                   </form>
                </div>
-            </div>
+            </div >
          )}
 
          {/* Shipping Label Modal */}
-         {selectedOrderForLabel && (
-            <div className="admin-modal-overlay" style={{ background: 'rgba(0,0,0,0.9)' }}>
-               <div className="admin-modal-backdrop" onClick={() => setSelectedOrderForLabel(null)} />
-               <div className="admin-modal-content" style={{ maxWidth: '440px', background: '#fff', padding: '0', borderRadius: '0', border: 'none' }}>
-                  <div id="shipping-label" style={{ padding: '40px', background: '#fff' }}>
-                     <div style={{ border: '4px solid #000', padding: '32px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-                           <span style={{ fontWeight: 900, fontSize: '2rem', letterSpacing: '-0.05em' }}>DEENICE</span>
-                           <span style={{ fontWeight: 900, fontSize: '0.875rem' }}>ORD {selectedOrderForLabel.id.toUpperCase()}</span>
-                        </div>
-
-                        <div style={{ marginBottom: '40px' }}>
-                           <div style={{ fontSize: '0.75rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '8px' }}>Recipient Account</div>
-                           <div style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1 }}>{selectedOrderForLabel.userId}</div>
-                        </div>
-
-                        <div style={{ marginBottom: '40px' }}>
-                           <div style={{ fontSize: '0.75rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '8px' }}>Destination Cluster</div>
-                           <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.hometown}</div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px', padding: '24px', background: '#000', color: '#fff' }}>
-                           <div>
-                              <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.6, textTransform: 'uppercase' }}>Amount Duel</div>
-                              <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.totalAmount.toLocaleString()}</div>
+         {
+            selectedOrderForLabel && (
+               <div className="admin-modal-overlay" style={{ background: 'rgba(0,0,0,0.9)' }}>
+                  <div className="admin-modal-backdrop" onClick={() => setSelectedOrderForLabel(null)} />
+                  <div className="admin-modal-content" style={{ maxWidth: '440px', background: '#fff', padding: '0', borderRadius: '0', border: 'none' }}>
+                     <div id="shipping-label" style={{ padding: '40px', background: '#fff' }}>
+                        <div style={{ border: '4px solid #000', padding: '32px' }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+                              <span style={{ fontWeight: 900, fontSize: '2rem', letterSpacing: '-0.05em' }}>DEENICE</span>
+                              <span style={{ fontWeight: 900, fontSize: '0.875rem' }}>ORD {selectedOrderForLabel.id.toUpperCase()}</span>
                            </div>
-                           <div>
-                              <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.6, textTransform: 'uppercase' }}>Payment Mode</div>
-                              <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.paymentStatus}</div>
-                           </div>
-                        </div>
 
-                        <div style={{ height: '80px', width: '100%', background: 'repeating-linear-gradient(90deg, #000, #000 4px, #fff 4px, #fff 8px)' }} />
-                        <div style={{ textAlign: 'center', marginTop: '1rem', fontWeight: 900, fontSize: '0.75rem' }}>VERIFIED BY DEENICE LABS</div>
+                           <div style={{ marginBottom: '40px' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '8px' }}>Recipient Account</div>
+                              <div style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1 }}>{selectedOrderForLabel.userId}</div>
+                           </div>
+
+                           <div style={{ marginBottom: '40px' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 900, opacity: 0.4, textTransform: 'uppercase', marginBottom: '8px' }}>Destination Cluster</div>
+                              <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.hometown}</div>
+                           </div>
+
+                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px', padding: '24px', background: '#000', color: '#fff' }}>
+                              <div>
+                                 <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.6, textTransform: 'uppercase' }}>Amount Duel</div>
+                                 <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.totalAmount.toLocaleString()}</div>
+                              </div>
+                              <div>
+                                 <div style={{ fontSize: '0.625rem', fontWeight: 900, opacity: 0.6, textTransform: 'uppercase' }}>Payment Mode</div>
+                                 <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{selectedOrderForLabel.paymentStatus}</div>
+                              </div>
+                           </div>
+
+                           <div style={{ height: '80px', width: '100%', background: 'repeating-linear-gradient(90deg, #000, #000 4px, #fff 4px, #fff 8px)' }} />
+                           <div style={{ textAlign: 'center', marginTop: '1rem', fontWeight: 900, fontSize: '0.75rem' }}>VERIFIED BY DEENICE LABS</div>
+                        </div>
+                     </div>
+                     <div style={{ background: '#fafafa', padding: '1.5rem 40px', display: 'flex', gap: '1rem' }}>
+                        <button onClick={() => window.print()} style={{ flexGrow: 1, padding: '1rem', background: '#000', color: '#fff', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                           <Printer size={18} /> PRINT IDENTITY TAG
+                        </button>
+                        <button onClick={() => setSelectedOrderForLabel(null)} style={{ padding: '1rem 2rem', border: '1.5px solid #000', background: 'transparent', borderRadius: '12px', fontWeight: 900, cursor: 'pointer' }}>CLOSE</button>
                      </div>
                   </div>
-                  <div style={{ background: '#fafafa', padding: '1.5rem 40px', display: 'flex', gap: '1rem' }}>
-                     <button onClick={() => window.print()} style={{ flexGrow: 1, padding: '1rem', background: '#000', color: '#fff', borderRadius: '12px', fontWeight: 900, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                        <Printer size={18} /> PRINT IDENTITY TAG
-                     </button>
-                     <button onClick={() => setSelectedOrderForLabel(null)} style={{ padding: '1rem 2rem', border: '1.5px solid #000', background: 'transparent', borderRadius: '12px', fontWeight: 900, cursor: 'pointer' }}>CLOSE</button>
-                  </div>
                </div>
-            </div>
-         )}
-      </div>
+            )
+         }
+      </div >
    );
 };
 

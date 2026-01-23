@@ -29,8 +29,11 @@ import LoginView from './components/LoginView';
 import HotDeals from './components/HotDeals';
 import BuyMeCoffee from './components/BuyMeCoffee';
 import SellGadget from './components/SellGadget';
+import WorkWithMe from './components/WorkWithMe';
 import GadgetMarketplace from './components/GadgetMarketplace';
 import { CartItem, Product, ProductVariation, User, Order, OrderStatus, PaymentStatus, Deal, GadgetListing, Offer } from './types';
+
+
 import { STORE_NAME, WHATSAPP_NUMBER, SOCIAL_LINKS, STORE_EMAIL, LOGO_URL, LOGO_ICON_URL, ADMIN_EMAIL } from './constants';
 import * as db from './services/supabase';
 
@@ -59,6 +62,7 @@ const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [adminProfile, setAdminProfile] = useState({ adminName: 'Andriano Darwin', adminAvatar: 'https://i.pravatar.cc/150?u=admin' });
 
   useEffect(() => {
@@ -71,7 +75,8 @@ const App: React.FC = () => {
           db.getOffers(),
           db.getStoreConfig(),
           db.getDeals(),
-          db.getUsers()
+          db.getUsers(),
+          db.getCategories()
         ]);
 
         if (results[0].status === 'fulfilled') setProducts(results[0].value);
@@ -103,6 +108,9 @@ const App: React.FC = () => {
 
         if (results[6].status === 'fulfilled') setUsers(results[6].value || []);
         else console.error('Error fetching users:', results[6].reason);
+
+        if (results[7].status === 'fulfilled') setCategories(results[7].value || []);
+        else console.error('Error fetching categories:', results[7].reason);
 
       } catch (err) {
         console.error('Unexpected error fetching data:', err);
@@ -179,7 +187,7 @@ const App: React.FC = () => {
       createdAt: new Date().toISOString(), // Use ISO for database consistency
       deliveryType: orderData.deliveryType || 'DELIVERY',
       specialCode: Math.floor(1000 + Math.random() * 9000).toString(),
-      hometown: user?.hometown || 'Nairobi',
+      hometown: orderData.hometown || user?.hometown || 'Nairobi',
       deliveryFee: orderData.deliveryFee || 0,
     };
 
@@ -309,6 +317,24 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAddCategory = async (name: string) => {
+    try {
+      const newCat = await db.createCategory({ name });
+      setCategories([...categories, newCat]);
+    } catch (err) {
+      console.error('Error adding category:', err);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await db.deleteCategory(id);
+      setCategories(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      console.error('Error deleting category:', err);
+    }
+  };
+
   const Header = () => (
     <nav className="nav-wrapper glass-header">
       <div className="nav-content">
@@ -411,17 +437,18 @@ const App: React.FC = () => {
             <Route path="/" element={
               <>
                 <Hero />
-                <Shop onAddToCart={addToCart} products={products} searchQuery={searchQuery} />
+                <Shop onAddToCart={addToCart} products={products} searchQuery={searchQuery} categories={categories} />
                 <BuyForMe />
                 <ReviewSection />
                 <BlogSection />
               </>
             } />
-            <Route path="/shop" element={<Shop onAddToCart={addToCart} products={products} searchQuery={searchQuery} />} />
+            <Route path="/shop" element={<Shop onAddToCart={addToCart} products={products} searchQuery={searchQuery} categories={categories} />} />
             <Route path="/deals" element={<HotDeals products={products} deals={deals} onAddToCart={addToCart} />} />
             <Route path="/buy-for-me" element={<BuyForMe />} />
             <Route path="/sell-gadget" element={<SellGadget user={user} onSubmit={handleSellGadget} />} />
             <Route path="/market" element={<GadgetMarketplace gadgets={gadgets} onOffer={handleCreateOffer} />} />
+            <Route path="/work-with-me" element={<WorkWithMe />} />
             <Route path="/login" element={<LoginView onLogin={(u) => {
               setUser(u);
               window.location.hash = u.role === 'ADMIN' ? '#/admin' : '#/';
@@ -445,6 +472,9 @@ const App: React.FC = () => {
                 onDeleteDeal={handleDeleteDeal}
                 onUpdateGadgetStatus={handleUpdateGadgetStatus}
                 onUpdateOfferStatus={handleUpdateOfferStatus}
+                categories={categories}
+                onAddCategory={handleAddCategory}
+                onDeleteCategory={handleDeleteCategory}
               />
             } />
             <Route path="/orders" element={<OrderHistory user={user} orders={orders} onUpdateUser={handleUpdateUser} />} />
@@ -516,6 +546,7 @@ const App: React.FC = () => {
               <ul>
                 <li><Link to="/shop">All Products</Link></li>
                 <li><Link to="/deals">Hot Deals</Link></li>
+                <li><Link to="/work-with-me">Work With Me</Link></li>
                 <li><Link to="/buy-for-me">Import from US</Link></li>
               </ul>
             </div>

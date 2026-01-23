@@ -7,14 +7,17 @@ interface ShopProps {
   onAddToCart: (p: Product, color: string, qty: number, variation?: ProductVariation) => void;
   products: Product[];
   searchQuery?: string;
+  categories: any[];
 }
 
-const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '' }) => {
+const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '', categories: dynamicCategories }) => {
   const [activeCategory, setActiveCategory] = useState('All');
-  const categories = ['All', 'Desk Setup', 'Lighting', 'Accessories', 'Streaming'];
+  const categoriesList = ['All', ...dynamicCategories.map(c => c.name)];
 
   const [selectedColors, setSelectedColors] = useState<{ [id: string]: string }>({});
   const [selectedVariations, setSelectedVariations] = useState<{ [id: string]: ProductVariation }>({});
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedQty, setSelectedQty] = useState<number>(1);
 
   let filteredProducts = products;
 
@@ -40,7 +43,7 @@ const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '' }) 
           </div>
 
           <div className="filter-group">
-            {categories.map(cat => (
+            {categoriesList.map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -65,6 +68,8 @@ const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '' }) 
                     src={currentVariation?.image || product.images[0] || 'https://via.placeholder.com/400'}
                     alt={product.name}
                     className="product-img"
+                    onClick={() => setSelectedProductId(product.id)}
+                    style={{ cursor: 'pointer' }}
                   />
                   <div className="stock-badge">
                     <CheckCircle2 size={10} style={{ color: '#22c55e' }} />
@@ -153,6 +158,35 @@ const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '' }) 
         </div>
       </div>
     </section>
+    {
+    selectedProductId && (
+      <div className="product-detail-modal" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ backgroundColor: '#fff', padding: '2rem', borderRadius: '8px', maxWidth: '500px', width: '100%' }}>
+          {(() => {
+            const prod = products.find(p => p.id === selectedProductId);
+            if (!prod) return null;
+            const curColor = selectedColors[prod.id] || prod.colors[0] || 'Original';
+            const curVar = selectedVariations[prod.id] || (prod.variations && prod.variations[0]);
+            return (
+              <>
+                <h2>{prod.name}</h2>
+                <p>{prod.description || 'No description available.'}</p>
+                <p>{prod.currency} {(curVar?.price || prod.price).toLocaleString()}</p>
+                <label>
+                  Quantity:
+                  <input type="number" min={1} value={selectedQty} onChange={e => setSelectedQty(parseInt(e.target.value) || 1)} style={{ marginLeft: '0.5rem', width: '60px' }} />
+                </label>
+                <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+                  <button onClick={() => { onAddToCart(prod, curColor, selectedQty, curVar); setSelectedProductId(null); setSelectedQty(1); }} style={{ padding: '0.5rem 1rem' }}>Add to Cart</button>
+                  <button onClick={() => setSelectedProductId(null)} style={{ padding: '0.5rem 1rem' }}>Close</button>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+    )
+  }
   );
 };
 

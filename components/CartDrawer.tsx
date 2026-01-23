@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Minus, Plus, ShoppingBag, Trash2, ArrowRight, Smartphone, MapPin, Edit2, Copy, Check, Sparkles } from 'lucide-react';
 import { CartItem, User, Order } from '../types';
@@ -17,7 +16,7 @@ interface CartDrawerProps {
 }
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, user, onRemove, onUpdateQty, onCreateOrder, onUpdateUser }) => {
-  const [checkoutStep, setCheckoutStep] = useState<'cart' | 'checkout' | 'payment'>('cart');
+  const [checkoutStep, setCheckoutStep] = useState<'cart' | 'checkout' | 'payment' | 'success'>('cart');
   const [deliveryType, setDeliveryType] = useState<'PICKUP' | 'DELIVERY'>('DELIVERY');
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -25,16 +24,20 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, user, o
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  const [guestHometown, setGuestHometown] = useState('');
+
   const getDeliveryFee = () => {
     if (deliveryType === 'PICKUP') return 0;
-    if (!user?.hometown) return 500;
+    const town = user?.hometown || guestHometown;
 
-    const nairobiTown = NAIROBI_DISTANCES.find(t => t.name === user.hometown);
+    if (!town) return 500;
+
+    const nairobiTown = NAIROBI_DISTANCES.find(t => t.name === town);
     if (nairobiTown) {
       return Math.max(360, nairobiTown.distance * 60);
     }
 
-    const zone = DELIVERY_ZONES.find(z => z.name === user.hometown);
+    const zone = DELIVERY_ZONES.find(z => z.name === town);
     return zone ? zone.fee : 500;
   };
 
@@ -49,17 +52,23 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, user, o
   };
 
   const handleMpesaClick = () => {
-    const order = onCreateOrder({ totalAmount: total, deliveryType, deliveryFee });
+    const currentTown = user?.hometown || guestHometown;
+    const order = onCreateOrder({ totalAmount: total, deliveryType, deliveryFee, hometown: currentTown });
     const msg = `Hi Deenice Store! I'd like to place an order:
 Code: ${order.specialCode}
-Town: ${user?.hometown}
+Town: ${currentTown}
 Items:
 ${items.map(i => `- ${i.name} (${i.selectedColor}${i.selectedVariation ? `, ${i.selectedVariation.value}` : ''}) x${i.quantity}`).join('\n')}
 Total: KES ${total.toLocaleString()}
 Order ID: ${order.id}
 Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
-    onClose();
+
+    if (user) {
+      onClose();
+    } else {
+      setCheckoutStep('success');
+    }
   };
 
   const towns = [...NAIROBI_DISTANCES.map(t => t.name), ...DELIVERY_ZONES.map(t => t.name)].sort();
@@ -79,7 +88,11 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
   };
 
   const selectTown = (town: string) => {
-    onUpdateUser({ hometown: town });
+    if (user) {
+      onUpdateUser({ hometown: town });
+    } else {
+      setGuestHometown(town);
+    }
     setIsEditingLocation(false);
     setShowSuggestions(false);
     setTownSearch('');
@@ -136,7 +149,6 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
               {checkoutStep === 'checkout' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                   <h3 style={{ fontWeight: 900, fontSize: '1.5rem', marginBottom: '2rem' }}>Delivery Details</h3>
-                  {!user && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '1rem' }}>Please log in to calculate delivery fee.</p>}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <button
@@ -150,7 +162,7 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
                       <span style={{ fontWeight: 900 }}>KES {getDeliveryFee().toLocaleString()}</span>
                     </button>
 
-                    {deliveryType === 'DELIVERY' && user && (
+                    {deliveryType === 'DELIVERY' && (
                       <div style={{ background: '#f9fafb', padding: '1rem', borderRadius: '16px' }}>
                         {isEditingLocation ? (
                           <div style={{ position: 'relative' }}>
@@ -182,7 +194,7 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0.5rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
                               <MapPin size={14} style={{ color: 'var(--color-primary)' }} />
-                              <span>Shipping to <span style={{ fontWeight: 700 }}>{user.hometown}</span></span>
+                              <span>Shipping to <span style={{ fontWeight: 700 }}>{user?.hometown || guestHometown || 'Select Town'}</span></span>
                             </div>
                             <button onClick={() => setIsEditingLocation(true)} style={{ padding: '0.5rem', color: 'var(--color-primary)' }}>
                               <Edit2 size={14} />
@@ -250,11 +262,44 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
                   </div>
                 </div>
               )}
+
+              {checkoutStep === 'success' && (
+                <div style={{ animation: 'fadeIn 0.3s ease', textAlign: 'center', paddingTop: '2rem' }}>
+                  <div style={{ background: '#ecfccb', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                    <Check size={40} style={{ color: '#65a30d' }} />
+                  </div>
+                  <h3 style={{ fontWeight: 900, fontSize: '1.5rem', marginBottom: '0.5rem' }}>Order Placed!</h3>
+                  <p style={{ color: '#6b7280', marginBottom: '2rem' }}>We've opened WhatsApp to confirm your order.</p>
+
+                  <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '32px', border: '1.5px solid #000', boxShadow: '4px 4px 0 #000' }}>
+                    <h4 style={{ fontWeight: 900, fontSize: '1.25rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Track Your Order?</h4>
+                    <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem', fontWeight: 700 }}>As a guest, you'll receive updates via WhatsApp. Create an account to track delivery status live and save details for next time.</p>
+
+                    <button
+                      onClick={() => {
+                        window.location.hash = '#/login';
+                        onClose();
+                      }}
+                      className="confera-btn"
+                      style={{ width: '100%', justifyContent: 'center', marginBottom: '1rem', background: '#000', color: '#fff' }}
+                    >
+                      <Sparkles size={18} /> Create Account
+                    </button>
+
+                    <button
+                      onClick={onClose}
+                      style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}
+                    >
+                      No thanks, I'll stay as guest
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
 
-        {items.length > 0 && (
+        {items.length > 0 && checkoutStep !== 'success' && (
           <div className="cart-footer">
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
@@ -271,26 +316,26 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
                 <span style={{ fontWeight: 900, fontStyle: 'italic' }}>TOTAL</span>
                 <span style={{ fontWeight: 900 }}>KES {total.toLocaleString()}</span>
               </div>
-            </div>
 
-            {checkoutStep === 'cart' && (
-              <button
-                onClick={() => user ? setCheckoutStep('checkout') : (window.location.hash = '#/login')}
-                className="confera-btn"
-                style={{ width: '100%', justifyContent: 'center' }}
-              >
-                Proceed to Delivery <ArrowRight size={20} />
-              </button>
-            )}
-            {checkoutStep === 'checkout' && (
-              <button
-                onClick={() => setCheckoutStep('payment')}
-                className="confera-btn"
-                style={{ width: '100%', justifyContent: 'center' }}
-              >
-                Pay & Complete <ArrowRight size={20} />
-              </button>
-            )}
+              {checkoutStep === 'cart' && (
+                <button
+                  onClick={() => setCheckoutStep('checkout')}
+                  className="confera-btn"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                >
+                  Proceed to Delivery <ArrowRight size={20} />
+                </button>
+              )}
+              {checkoutStep === 'checkout' && (
+                <button
+                  onClick={() => setCheckoutStep('payment')}
+                  className="confera-btn"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                >
+                  Pay & Complete <ArrowRight size={20} />
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

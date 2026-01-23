@@ -21,6 +21,11 @@ export interface ProductVariation {
   stock?: number;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -33,19 +38,22 @@ export interface Product {
   category: string;
   salesCount?: number;
   variations?: ProductVariation[];
+  isHidden?: boolean;
 }
 
 export interface Deal {
   id: string;
-  productId: string;
+  productId?: string; // Optional if standaloneProduct is provided
   discountPrice: number;
   endsAt: string;
   isActive: boolean;
+  standaloneProduct?: Product; // For items not in the main inventory
 }
 
 export interface CartItem extends Product {
   quantity: number;
   selectedColor: string;
+  selectedVariation?: ProductVariation;
 }
 
 export interface Order {

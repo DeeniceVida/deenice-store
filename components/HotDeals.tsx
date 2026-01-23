@@ -29,7 +29,7 @@ const HotDeals: React.FC<HotDealsProps> = ({ products, deals, onAddToCart }) => 
 
         <div className="deals-grid">
           {deals.map((deal) => {
-            const product = products.find(p => p.id === deal.productId);
+            const product = deal.standaloneProduct || products.find(p => p.id === deal.productId);
             if (!product) return null;
 
             return (

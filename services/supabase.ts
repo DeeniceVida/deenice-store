@@ -27,6 +27,39 @@ export const upsertProduct = async (product: Product) => {
     return data[0];
 };
 
+// --- Categories ---
+export const getCategories = async (): Promise<any[]> => {
+    const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.warn('Categories table might not exist, returning empty.', error);
+        return [];
+    }
+    return data;
+};
+
+export const createCategory = async (category: { name: string }) => {
+    const { data, error } = await supabase
+        .from('categories')
+        .insert([category])
+        .select();
+
+    if (error) throw error;
+    return data[0];
+};
+
+export const deleteCategory = async (id: string) => {
+    const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
 // --- Orders ---
 export const getOrders = async (): Promise<Order[]> => {
     const { data, error } = await supabase
