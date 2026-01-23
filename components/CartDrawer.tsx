@@ -148,7 +148,12 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
 
               {checkoutStep === 'checkout' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <h3 style={{ fontWeight: 900, fontSize: '1.5rem', marginBottom: '2rem' }}>Delivery Details</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                    <button onClick={() => setCheckoutStep('cart')} className="icon-btn" style={{ background: '#f3f4f6' }}>
+                      <ArrowRight className="rotate-180" size={20} />
+                    </button>
+                    <h3 style={{ fontWeight: 900, fontSize: '1.5rem' }}>Delivery Details</h3>
+                  </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <button
@@ -220,7 +225,12 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
 
               {checkoutStep === 'payment' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <h3 style={{ fontWeight: 900, fontSize: '1.5rem', marginBottom: '2rem' }}>Payment</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                    <button onClick={() => setCheckoutStep('checkout')} className="icon-btn" style={{ background: '#f3f4f6' }}>
+                      <ArrowRight className="rotate-180" size={20} />
+                    </button>
+                    <h3 style={{ fontWeight: 900, fontSize: '1.5rem' }}>Payment</h3>
+                  </div>
                   <div style={{ background: 'rgba(38, 185, 0, 0.05)', borderRadius: '32px', padding: '2rem', border: '2px solid rgba(38, 185, 0, 0.2)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                       <div style={{ background: '#26B900', padding: '0.75rem', borderRadius: '16px', color: 'white' }}>

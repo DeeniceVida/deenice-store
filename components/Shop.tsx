@@ -89,7 +89,7 @@ const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '', ca
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>{product.name}</h3>
+                      <h3 style={{ fontWeight: 700, fontSize: '1.125rem', cursor: 'pointer' }} onClick={() => setSelectedProductId(product.id)}>{product.name}</h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
                         <Star size={12} style={{ fill: 'var(--color-accent)', color: 'var(--color-accent)' }} /> 4.9
                       </div>
@@ -159,35 +159,124 @@ const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '', ca
           </div>
         </div>
       </section>
-      {
-        selectedProductId && (
-          <div className="product-detail-modal" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ backgroundColor: '#fff', padding: '2rem', borderRadius: '8px', maxWidth: '500px', width: '100%' }}>
-              {(() => {
-                const prod = products.find(p => p.id === selectedProductId);
-                if (!prod) return null;
-                const curColor = selectedColors[prod.id] || prod.colors[0] || 'Original';
-                const curVar = selectedVariations[prod.id] || (prod.variations && prod.variations[0]);
-                return (
-                  <>
-                    <h2>{prod.name}</h2>
-                    <p>{prod.description || 'No description available.'}</p>
-                    <p>{prod.currency} {(curVar?.price || prod.price).toLocaleString()}</p>
-                    <label>
-                      Quantity:
-                      <input type="number" min={1} value={selectedQty} onChange={e => setSelectedQty(parseInt(e.target.value) || 1)} style={{ marginLeft: '0.5rem', width: '60px' }} />
-                    </label>
-                    <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
-                      <button onClick={() => { onAddToCart(prod, curColor, selectedQty, curVar); setSelectedProductId(null); setSelectedQty(1); }} style={{ padding: '0.5rem 1rem' }}>Add to Cart</button>
-                      <button onClick={() => setSelectedProductId(null)} style={{ padding: '0.5rem 1rem' }}>Close</button>
+
+      {/* Product Detail Modal */}
+      {selectedProductId && (() => {
+        const prod = products.find(p => p.id === selectedProductId);
+        if (!prod) return null;
+        const curColor = selectedColors[prod.id] || prod.colors[0] || 'Original';
+        const curVar = selectedVariations[prod.id] || (prod.variations && prod.variations[0]);
+        const mainImage = curVar?.image || prod.images[0];
+        // Combine all images
+        const allImages = Array.from(new Set([mainImage, ...prod.images]));
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setSelectedProductId(null)} />
+            <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-4xl relative z-10 flex flex-col md:flex-row max-h-[90vh]">
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedProductId(null)}
+                className="absolute top-4 right-4 z-20 bg-white/50 hover:bg-white rounded-full p-2 transition-colors"
+              >
+                <Search className="rotate-45" color="black" size={24} />
+              </button>
+
+              {/* Image Section */}
+              <div className="w-full md:w-1/2 bg-gray-100 p-8 flex flex-col items-center justify-center relative">
+                <img
+                  src={mainImage}
+                  alt={prod.name}
+                  className="w-full h-auto max-h-[50vh] object-contain mix-blend-multiply transition-all duration-300"
+                />
+
+                {/* Thumbnails */}
+                {allImages.length > 1 && (
+                  <div className="flex gap-2 mt-6 overflow-x-auto w-full px-2 justify-center">
+                    {allImages.map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        className={`w-16 h-16 rounded-lg object-cover cursor-pointer border-2 transition-all ${img === mainImage ? 'border-black opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                        onMouseEnter={() => {
+                          // This is a simple implementation, ideally we'd have state for 'activeImage' in the modal
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Details Section */}
+              <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto flex flex-col">
+                <div className="mb-auto">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="bg-black text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                      {prod.category}
+                    </span>
+                    {prod.stock > 0 ? (
+                      <span className="text-green-600 text-xs font-bold flex items-center gap-1"><CheckCircle2 size={12} /> In Stock</span>
+                    ) : (
+                      <span className="text-red-500 text-xs font-bold">Out of Stock</span>
+                    )}
+                  </div>
+
+                  <h2 className="text-3xl md:text-4xl font-black mb-4 leading-tight">{prod.name}</h2>
+                  <p className="text-gray-600 font-medium leading-relaxed mb-8">{prod.description}</p>
+
+                  {/* Variations & Options */}
+                  <div className="space-y-6 mb-8">
+                    {prod.variations && prod.variations.length > 0 && (
+                      <div>
+                        <span className="text-xs font-bold uppercase text-gray-400 block mb-2">Select Option</span>
+                        <div className="flex flex-wrap gap-2">
+                          {prod.variations.map(v => (
+                            <button
+                              key={v.id}
+                              onClick={() => setSelectedVariations(prev => ({ ...prev, [prod.id]: v }))}
+                              className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${curVar?.id === v.id ? 'border-black bg-black text-white' : 'border-gray-100 hover:border-black'}`}
+                            >
+                              {v.value}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quantity */}
+                    <div>
+                      <span className="text-xs font-bold uppercase text-gray-400 block mb-2">Quantity</span>
+                      <div className="flex items-center gap-4 bg-gray-50 inline-flex p-2 rounded-xl border border-gray-100">
+                        <input
+                          type="number"
+                          min={1}
+                          value={selectedQty}
+                          onChange={e => setSelectedQty(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-12 text-center bg-transparent font-black outline-none"
+                        />
+                      </div>
                     </div>
-                  </>
-                );
-              })()}
+                  </div>
+                </div>
+
+                {/* Action Bar */}
+                <div className="pt-8 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-gray-400 font-bold text-sm">Total Price</span>
+                    <span className="text-3xl font-black">{prod.currency} {(curVar?.price || prod.price).toLocaleString()}</span>
+                  </div>
+                  <button
+                    onClick={() => { onAddToCart(prod, curColor, selectedQty, curVar); setSelectedProductId(null); setSelectedQty(1); }}
+                    className="w-full bg-[#E3F77E] hover:bg-[#d4ed60] text-black py-4 rounded-xl font-black text-lg uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-xl shadow-[#E3F77E]/20"
+                  >
+                    <ShoppingCart size={20} /> Add To Bag
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        )
-      }
+        );
+      })()}
     </>
   );
 };
