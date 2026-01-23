@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import React, { useState } from 'react';
 import { X, Minus, Plus, ShoppingBag, Trash2, ArrowRight, Smartphone, MapPin, Edit2, Copy, Check, Sparkles, Truck } from 'lucide-react';
 import { CartItem, User, Order } from '../types';
 import { WHATSAPP_NUMBER, MPESA_TILL_NUMBER, DELIVERY_ZONES, NAIROBI_DISTANCES } from '../constants';
