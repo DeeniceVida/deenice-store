@@ -83,6 +83,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
     // Ensure we have at least duplicates if no gallery for UI demo purposes based on reference
     // But for real app, just use what we have.
 
+    // Mock data for social proof if not real
+    const recentPurchases = 13 + Math.floor(Math.random() * 10);
+
     return (
         <div className="min-h-screen bg-[#FDFBF7] pt-24 pb-12 px-4 md:px-8">
             <div className="max-w-7xl mx-auto">
@@ -104,6 +107,16 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                                 alt={product.name}
                                 className="w-full h-full object-cover object-center mix-blend-multiply"
                             />
+                            {product.isNew && (
+                                <div className="absolute top-4 left-4 bg-white text-black text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider shadow-sm">
+                                    New
+                                </div>
+                            )}
+                            {discount > 0 && (
+                                <div className="absolute top-4 left-20 bg-white text-black text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider shadow-sm">
+                                    SALE
+                                </div>
+                            )}
                             {product.stock <= 0 && (
                                 <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                                     Sold Out
@@ -122,39 +135,58 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                                     <img src={img} alt={`${product.name} view ${idx + 1}`} className="w-full h-full object-cover mix-blend-multiply" />
                                 </button>
                             ))}
-                            {/* If fewer than 3 images, maybe specific placeholders or just empty space? Keeping it dynamic */}
                         </div>
                     </div>
 
                     {/* Right Column: Details */}
                     <div className="flex flex-col">
-                        <h1 className="text-4xl md:text-5xl font-black text-black mb-2 tracking-tight leading-none">{product.name}</h1>
-                        <div className="flex items-baseline gap-4 mb-8">
-                            <span className="text-3xl font-bold">{product.currency} {currentPrice.toLocaleString()}</span>
-                            {originalPrice && (
-                                <span className="text-lg text-gray-400 line-through decoration-red-500 decoration-2">{product.currency} {originalPrice.toLocaleString()}</span>
-                            )}
-                        </div>
+                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">{product.category || 'Collection'}</span>
+                        <h1 className="text-4xl md:text-5xl font-black text-black mb-4 tracking-tight leading-none">{product.name}</h1>
 
-                        {/* Description Disclosure */}
-                        <div className="border rounded-2xl p-6 bg-white shadow-sm mb-6 transition-all duration-300">
-                            <div
-                                className="flex justify-between items-center cursor-pointer"
-                                onClick={() => setIsDescOpen(!isDescOpen)}
-                            >
-                                <h3 className="font-bold text-lg">Description</h3>
-                                {isDescOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        <div className="flex items-center gap-2 mb-6">
+                            <div className="flex text-yellow-500 text-sm">
+                                {[1, 2, 3, 4, 5].map(i => <Star key={i} fill="currentColor" size={16} />)}
                             </div>
-                            {isDescOpen && (
-                                <div className="mt-4 text-gray-600 leading-relaxed text-sm animate-fadeIn">
-                                    {product.description}
-                                </div>
-                            )}
+                            <span className="text-sm font-bold text-gray-900">4.9</span>
+                            <span className="text-sm text-gray-500">(36 reviews)</span>
                         </div>
 
-                        {/* Color Selection */}
-                        {product.colors && product.colors.length > 0 && (
-                            <div className="mb-6">
+                        <div className="flex items-baseline gap-4 mb-8">
+                            <span className="text-4xl font-black">{product.currency} {currentPrice.toLocaleString()}</span>
+                            {originalPrice && (
+                                <span className="text-lg text-gray-400 line-through font-medium opacity-50">{product.currency} {originalPrice.toLocaleString()}</span>
+                            )}
+                            <span className="text-sm text-gray-500 font-medium">shipping excl.</span>
+                        </div>
+
+                        <p className="text-gray-600 leading-relaxed mb-8 font-medium">
+                            {product.description}
+                        </p>
+
+                        {/* Options: Variations (Pills) */}
+                        {product.variations && product.variations.length > 0 && (
+                            <div className="mb-8">
+                                <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Choose your option</h3>
+                                <div className="flex flex-wrap gap-3">
+                                    {product.variations.map((v) => (
+                                        <button
+                                            key={v.id}
+                                            onClick={() => setCurVar(v)}
+                                            className={`px-6 py-3 rounded-xl text-sm font-bold transition-all border-2 ${curVar?.id === v.id
+                                                    ? 'bg-[#EAD4A8] border-[#EAD4A8] text-black shadow-sm'
+                                                    : 'bg-[#F2EFE9] border-transparent text-gray-600 hover:bg-[#ebe7e0]'
+                                                }`}
+                                        >
+                                            {v.storage || v.color || 'Standard'} {v.ram && `+ ${v.ram}`}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Color Selection (if colors exist and no variations covering it) */}
+                        {product.colors && product.colors.length > 0 && !product.variations?.some(v => v.color) && (
+                            <div className="mb-8">
                                 <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Color</h3>
                                 <div className="flex gap-3">
                                     {product.colors.map((color) => (
@@ -162,122 +194,82 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                                             key={color}
                                             onClick={() => setSelectedColor(color)}
                                             className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${selectedColor === color ? 'border-black scale-110 shadow-md' : 'border-transparent hover:scale-110'}`}
-                                            style={{ backgroundColor: color.toLowerCase() }} // Assuming color name is valid css color
+                                            style={{ backgroundColor: color.toLowerCase() }}
                                             title={color}
-                                        >
-                                            {/* Checkmark for lighter colors if needed, but border is good indicator */}
-                                        </button>
+                                        />
                                     ))}
                                 </div>
                             </div>
                         )}
 
                         {/* Quantity Selector */}
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="flex items-center border-2 border-gray-200 rounded-xl px-2 py-1 bg-white">
-                                <button
-                                    onClick={() => setSelectedQty(Math.max(1, selectedQty - 1))}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <Minus size={16} />
-                                </button>
-                                <span className="w-12 text-center font-bold text-lg">{selectedQty}</span>
-                                <button
-                                    onClick={() => setSelectedQty(selectedQty + 1)}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <Plus size={16} />
-                                </button>
+                        <div className="mb-8">
+                            <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Quantity</h3>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center bg-[#F2EFE9] rounded-xl px-2 py-1">
+                                    <button
+                                        onClick={() => setSelectedQty(Math.max(1, selectedQty - 1))}
+                                        className="w-10 h-10 flex items-center justify-center hover:bg-black/5 rounded-lg transition-colors"
+                                    >
+                                        <Minus size={16} />
+                                    </button>
+                                    <span className="w-12 text-center font-bold text-lg">{selectedQty}</span>
+                                    <button
+                                        onClick={() => setSelectedQty(selectedQty + 1)}
+                                        className="w-10 h-10 flex items-center justify-center hover:bg-black/5 rounded-lg transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <button
-                                onClick={() => onAddToCart(product, selectedColor, selectedQty, curVar)}
-                                className="py-4 rounded-xl border-2 border-gray-200 font-bold text-black hover:border-black hover:bg-gray-50 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
-                            >
-                                Add to Cart
-                            </button>
-                            <button
-                                onClick={handleBuyNow}
-                                className="py-4 rounded-xl bg-black text-white font-bold hover:bg-gray-800 transition-all uppercase tracking-wider shadow-lg shadow-black/20"
-                            >
-                                Buy Now
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => onAddToCart(product, selectedColor, selectedQty, curVar)}
+                            className="w-full py-5 rounded-2xl bg-[#1A1A1A] text-white font-bold text-lg hover:bg-black transition-all uppercase tracking-wider shadow-xl shadow-black/10 mb-6 flex items-center justify-center gap-2"
+                        >
+                            add to cart
+                        </button>
 
-                        {/* Shipping Info Disclosure */}
-                        <div className="border rounded-2xl p-6 bg-white shadow-sm mb-8">
-                            <div
-                                className="flex justify-between items-center cursor-pointer mb-2"
-                                onClick={() => setIsShippingOpen(!isShippingOpen)}
-                            >
-                                <h3 className="font-bold text-lg">Shipping</h3>
-                                {isShippingOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                            </div>
-
-                            {isShippingOpen && (
-                                <div className="grid grid-cols-2 gap-y-6 gap-x-4 mt-6">
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-2 bg-gray-100 rounded-full"><Zap size={16} /></div>
-                                        <div>
-                                            <p className="text-xs text-gray-400 font-bold uppercase">Discount</p>
-                                            <p className="text-sm font-semibold">Reg</p>
-                                        </div>
+                        {/* Social Proof */}
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="flex -space-x-2">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="w-8 h-8 rounded-full border-2 border-[#FDFBF7] bg-gray-200 overflow-hidden">
+                                        <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="Buyer" className="w-full h-full object-cover" />
                                     </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-2 bg-gray-100 rounded-full"><Package size={16} /></div>
-                                        <div>
-                                            <p className="text-xs text-gray-400 font-bold uppercase">Package</p>
-                                            <p className="text-sm font-semibold">Secure</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-2 bg-gray-100 rounded-full"><Clock size={16} /></div>
-                                        <div>
-                                            <p className="text-xs text-gray-400 font-bold uppercase">Delivery Time</p>
-                                            <p className="text-sm font-semibold">1-3 Working Days</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-2 bg-gray-100 rounded-full"><Truck size={16} /></div>
-                                        <div>
-                                            <p className="text-xs text-gray-400 font-bold uppercase">Arrive</p>
-                                            <p className="text-sm font-semibold">Standard Shipping</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Rating & Reviews Section */}
-                        <div className="mt-4">
-                            <h2 className="text-2xl font-bold mb-6">Rating & Reviews</h2>
-                            <div className="flex items-end gap-4 mb-4">
-                                <span className="text-6xl font-black">4.5</span>
-                                <span className="text-xl text-gray-400 font-medium mb-2">/5</span>
-                                <div className="flex mb-3 ml-2 text-yellow-400">
-                                    {[1, 2, 3, 4].map(i => <Star key={i} fill="currentColor" size={20} />)}
-                                    <Star fill="currentColor" size={20} className="text-yellow-400 opacity-50" />
+                                ))}
+                                <div className="w-8 h-8 rounded-full border-2 border-[#FDFBF7] bg-[#E3F77E] flex items-center justify-center text-[10px] font-bold text-black">
+                                    +10
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-500 mb-8">(50 Reviews)</p>
+                            <p className="text-sm font-medium text-gray-900">
+                                <span className="font-bold">{recentPurchases} other people</span> purchased it today
+                            </p>
+                        </div>
 
-                            {/* Mock Review Card */}
-                            <div className="border border-gray-100 rounded-2xl p-6 bg-white">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="font-bold">Obayedul</div>
-                                    </div>
-                                    <span className="text-xs text-gray-400">13 Oct 2024</span>
+                        <div className="h-px bg-gray-200 w-full mb-8"></div>
+
+                        {/* Trust Badges */}
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full border border-purple-200 text-purple-600 flex items-center justify-center">
+                                    <span className="block w-3 h-3 text-[10px] leading-none">😊</span> {/* Replaced with emoji for simplicity/icon consistency */}
                                 </div>
-                                <div className="flex text-black mb-3 text-xs">
-                                    {[1, 2, 3, 4, 5].map(i => <Star key={i} fill="currentColor" size={14} />)}
+                                <span className="text-sm font-medium text-gray-700">Insanely delicious</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full border border-blue-200 text-blue-600 flex items-center justify-center">
+                                    <Package size={14} />
                                 </div>
-                                <p className="text-sm text-gray-600 italic">
-                                    "Loose-fit sweatshirt hoodie in medium weight cotton-blend fabric with a generous, but not oversized silhouette."
-                                </p>
+                                <span className="text-sm font-medium text-gray-700">Shipped right to your door</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full border border-green-200 text-green-600 flex items-center justify-center">
+                                    <CheckCircle size={14} />
+                                </div>
+                                <span className="text-sm font-medium text-gray-700">100% organic, non-GMO</span>
                             </div>
                         </div>
 
