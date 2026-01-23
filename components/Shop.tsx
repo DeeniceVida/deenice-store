@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { ShoppingCart, Star, CheckCircle2, Search } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShoppingCart, Star, CheckCircle2, Search, Truck, ChevronDown } from 'lucide-react';
 import { Product, ProductVariation } from '../types';
 
 interface ShopProps {
@@ -265,12 +266,38 @@ const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '', ca
                     <span className="text-gray-400 font-bold text-sm">Total Price</span>
                     <span className="text-3xl font-black">{prod.currency} {(curVar?.price || prod.price).toLocaleString()}</span>
                   </div>
-                  <button
-                    onClick={() => { onAddToCart(prod, curColor, selectedQty, curVar); setSelectedProductId(null); setSelectedQty(1); }}
-                    className="w-full bg-[#E3F77E] hover:bg-[#d4ed60] text-black py-4 rounded-xl font-black text-lg uppercase tracking-widest transition-colors flex items-center justify-center gap-2 shadow-xl shadow-[#E3F77E]/20"
-                  >
-                    <ShoppingCart size={20} /> Add To Bag
-                  </button>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => { onAddToCart(prod, curColor, selectedQty, curVar); setSelectedProductId(null); setSelectedQty(1); }}
+                      className="flex-1 bg-white border-2 border-black text-black py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                    <button
+                      onClick={() => { onAddToCart(prod, curColor, selectedQty, curVar); setSelectedProductId(null); setSelectedQty(1); }}
+                      className="flex-1 bg-black text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-900 transition-colors shadow-xl"
+                    >
+                      Buy Now
+                    </button>
+                  </div>
+
+                  {/* Shipping & Returns Placeholder */}
+                  <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-2 gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-gray-100 rounded-full"><Truck size={16} /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-gray-400">Delivery</p>
+                        <p className="text-sm font-bold">2-3 Working Days</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-gray-100 rounded-full"><CheckCircle2 size={16} /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-gray-400">Warranty</p>
+                        <p className="text-sm font-bold">1 Year Official</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
