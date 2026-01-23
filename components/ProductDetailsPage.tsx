@@ -262,9 +262,11 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
                             </div>
                         )}
 
-                        <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', lineHeight: '1.7', marginBottom: '40px', fontWeight: 500 }}>
-                            {product.description}
-                        </p>
+                        {isDescOpen && (
+                            <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', lineHeight: '1.7', marginBottom: '40px', fontWeight: 500 }}>
+                                {product.description}
+                            </p>
+                        )}
 
                         {/* Quantity & Actions */}
                         <div style={{ marginBottom: '40px' }}>
