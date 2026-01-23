@@ -449,7 +449,7 @@ const App: React.FC = () => {
             <Route path="/buy-for-me" element={<BuyForMe />} />
             <Route path="/product/:id" element={<ProductDetailsPage products={products} onAddToCart={addToCart} />} />
             <Route path="/sell-gadget" element={<SellGadget user={user} onSubmit={handleSellGadget} />} />
-            <Route path="/market" element={<GadgetMarketplace gadgets={gadgets} onOffer={handleCreateOffer} />} />
+            <Route path="/market" element={<GadgetMarketplace user={user} gadgets={gadgets} onOffer={handleCreateOffer} />} />
             <Route path="/work-with-me" element={<WorkWithMe />} />
             <Route path="/login" element={<LoginView onLogin={(u) => {
               setUser(u);

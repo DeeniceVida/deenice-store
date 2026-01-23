@@ -1,15 +1,30 @@
 import React from 'react';
-import { GadgetListing, Offer } from '../types';
-import { MapPin, Smartphone, User, Mail, CheckCircle, ArrowRight } from 'lucide-react';
+import { GadgetListing, Offer, User } from '../types';
+import { MapPin, Smartphone, Mail, CheckCircle, ArrowRight, AlertCircle } from 'lucide-react';
 import { STORE_EMAIL } from '../constants';
+import { Link } from 'react-router-dom';
 
 interface GadgetMarketplaceProps {
+    user: User | null;
     gadgets: GadgetListing[];
     onOffer: (offer: Omit<Offer, 'id' | 'createdAt' | 'status'>) => void;
 }
 
-const GadgetMarketplace: React.FC<GadgetMarketplaceProps> = ({ gadgets, onOffer }) => {
+const GadgetMarketplace: React.FC<GadgetMarketplaceProps> = ({ user, gadgets, onOffer }) => {
     const approvedGadgets = gadgets.filter(g => g.status === 'APPROVED');
+
+    if (!user) {
+        return (
+            <div className="confera-page flex items-center justify-center">
+                <div className="confera-form-container text-center max-w-md">
+                    <AlertCircle size={48} className="mx-auto mb-4" />
+                    <h2 className="text-3xl font-black mb-4 uppercase">Login Required</h2>
+                    <p className="mb-6 font-bold">You need to have a verified account to access the community market.</p>
+                    <Link to="/login" className="confera-btn inline-block text-center no-underline">Login Now &raquo;</Link>
+                </div>
+            </div>
+        );
+    }
 
     const handleBuyRequest = (gadget: GadgetListing) => {
         const subject = `I want to buy: ${gadget.deviceName}`;

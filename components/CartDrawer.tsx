@@ -282,13 +282,36 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
                   <p style={{ color: '#6b7280', marginBottom: '2rem' }}>We've opened WhatsApp to confirm your order.</p>
 
                   <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '32px', border: '1.5px solid #000', boxShadow: '4px 4px 0 #000' }}>
-                    <h4 style={{ fontWeight: 900, fontSize: '1.25rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Track Your Order?</h4>
-                    <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem', fontWeight: 700 }}>As a guest, you'll receive updates via WhatsApp. Create an account to track delivery status live and save details for next time.</p>
+                    <h4 style={{ fontWeight: 900, fontSize: '1.25rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Why join our community?</h4>
+                    <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0, margin: '0 0 1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <li style={{ display: 'flex', gap: '0.75rem', alignItems: 'start' }}>
+                        <div style={{ padding: '4px', background: '#ecfccb', borderRadius: '50%', color: '#65a30d' }}><Check size={12} /></div>
+                        <div>
+                          <p style={{ fontSize: '0.875rem', fontWeight: 900, margin: 0 }}>Live Order Tracking</p>
+                          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>See exactly where your delivery is.</p>
+                        </div>
+                      </li>
+                      <li style={{ display: 'flex', gap: '0.75rem', alignItems: 'start' }}>
+                        <div style={{ padding: '4px', background: '#ecfccb', borderRadius: '50%', color: '#65a30d' }}><Check size={12} /></div>
+                        <div>
+                          <p style={{ fontSize: '0.875rem', fontWeight: 900, margin: 0 }}>Community Market</p>
+                          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Access verified deals from other users.</p>
+                        </div>
+                      </li>
+                      <li style={{ display: 'flex', gap: '0.75rem', alignItems: 'start' }}>
+                        <div style={{ padding: '4px', background: '#ecfccb', borderRadius: '50%', color: '#65a30d' }}><Check size={12} /></div>
+                        <div>
+                          <p style={{ fontSize: '0.875rem', fontWeight: 900, margin: 0 }}>Sell Your Gadgets</p>
+                          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Turn your old tech into cash instantly.</p>
+                        </div>
+                      </li>
+                    </ul>
 
                     <button
                       onClick={() => {
                         window.location.hash = '#/login';
                         onClose();
+                        setCheckoutStep('cart');
                       }}
                       className="confera-btn"
                       style={{ width: '100%', justifyContent: 'center', marginBottom: '1rem', background: '#000', color: '#fff' }}
@@ -297,7 +320,10 @@ Payment: M-PESA Till ${MPESA_TILL_NUMBER}`;
                     </button>
 
                     <button
-                      onClick={onClose}
+                      onClick={() => {
+                        onClose();
+                        setTimeout(() => setCheckoutStep('cart'), 500); // Reset after closing
+                      }}
                       style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}
                     >
                       No thanks, I'll stay as guest
