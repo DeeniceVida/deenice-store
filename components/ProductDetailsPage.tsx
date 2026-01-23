@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Product, ProductVariation } from '../types';
 import {
@@ -33,6 +33,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
     const [selectedQty, setSelectedQty] = useState(1);
     const [curVar, setCurVar] = useState<ProductVariation | undefined>(undefined);
 
+    // Ref for mobile auto-scroll
+    const topRef = useRef<HTMLDivElement>(null);
+
     // Collapsible states
     const [isDescOpen, setIsDescOpen] = useState(true);
     const [isShippingOpen, setIsShippingOpen] = useState(true);
@@ -57,6 +60,18 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
             setSelectedImage(curVar.image);
         }
     }, [curVar]);
+
+    // Auto-scroll on image change (mobile only)
+    useEffect(() => {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile && topRef.current && selectedImage) {
+            // Only scroll if the image container header is not fully in view
+            const rect = topRef.current.getBoundingClientRect();
+            if (rect.top < 0) {
+                topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }, [selectedImage]);
 
     if (!product) {
         return (
@@ -120,7 +135,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, onAdd
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '64px' }}>
                     {/* Left Side: Images */}
-                    <div style={{ position: 'sticky', top: '100px', height: 'fit-content' }}>
+                    <div ref={topRef} style={{ position: 'sticky', top: '100px', height: 'fit-content' }}>
                         <div style={{ background: '#f0f2f5', borderRadius: '32px', overflow: 'hidden', position: 'relative', marginBottom: '24px', aspectRatio: '1/1', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }}>
                             <img
                                 src={selectedImage}
