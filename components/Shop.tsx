@@ -13,7 +13,7 @@ interface ShopProps {
 
 const Shop: React.FC<ShopProps> = ({ onAddToCart, products, searchQuery = '', categories: dynamicCategories }) => {
   const [activeCategory, setActiveCategory] = useState('All');
-  const categoriesList = ['All', ...dynamicCategories.map(c => c.name)];
+  const categoriesList = ['All', ...(dynamicCategories || []).map(c => c.name)];
 
   const [selectedColors, setSelectedColors] = useState<{ [id: string]: string }>({});
   const [selectedVariations, setSelectedVariations] = useState<{ [id: string]: ProductVariation }>({});

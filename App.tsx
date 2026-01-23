@@ -110,8 +110,19 @@ const App: React.FC = () => {
         if (results[6].status === 'fulfilled') setUsers(results[6].value || []);
         else console.error('Error fetching users:', results[6].reason);
 
-        if (results[7].status === 'fulfilled') setCategories(results[7].value || []);
-        else console.error('Error fetching categories:', results[7].reason);
+        const DEFAULT_CATEGORIES = [
+          { id: '1', name: 'Desk Setup' },
+          { id: '2', name: 'Lighting' },
+          { id: '3', name: 'Accessories' },
+          { id: '4', name: 'Streaming' },
+          { id: '5', name: 'Audio' }
+        ];
+
+        if (results[7].status === 'fulfilled' && results[7].value && results[7].value.length > 0) {
+          setCategories(results[7].value);
+        } else {
+          setCategories(DEFAULT_CATEGORIES);
+        }
 
       } catch (err) {
         console.error('Unexpected error fetching data:', err);
@@ -119,6 +130,11 @@ const App: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  const { pathname } = window.location;
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pathname]);
 
   // Persist user session
   useEffect(() => {

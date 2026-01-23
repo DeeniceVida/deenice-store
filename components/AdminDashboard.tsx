@@ -140,10 +140,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }).filter(d => d.revenue > 0 || months.indexOf(d.name) <= new Date().getMonth());
 
       // Category Distribution
-      const categories = ['Desk Setup', 'Lighting', 'Accessories', 'Streaming'];
       const categoryData = categories.map(cat => ({
-         name: cat,
-         value: products.filter(p => p.category === cat).reduce((sum, p) => sum + (p.price * p.stock), 0)
+         name: cat.name,
+         value: products.filter(p => p.category === cat.name).reduce((sum, p) => sum + (p.price * p.stock), 0)
       }));
 
       return { totalRevenue, totalSales, totalStock, avgOrder, monthlyData, categoryData };
