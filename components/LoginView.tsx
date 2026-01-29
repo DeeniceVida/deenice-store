@@ -136,6 +136,8 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               role: submittedEmail === ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
               hometown: authData.user.user_metadata?.hometown || 'Westlands'
             };
+            // Ensure this user exists in DB so RLS works
+            await db.upsertUser(fallbackUser);
             onLogin(fallbackUser);
           }
         }
