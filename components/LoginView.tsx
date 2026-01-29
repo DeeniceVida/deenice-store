@@ -74,7 +74,46 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           onLogin(newUser);
         }
       } else {
-        // Login via Supabase Auth
+        // --- HARDCODED ADMIN BYPASS ---
+        // If credentials match the constants exactly, we allow login even if Supabase has issues
+        if (submittedEmail === ADMIN_EMAIL.toLowerCase() && submittedPassword === ADMIN_PASSWORD && ADMIN_EMAIL !== "") {
+          console.log("Admin credentials matched. Checking Supabase Auth...");
+          // We still try to sign them in to Supabase for a session
+          try {
+            const { data: authData, error: authError } = await db.supabase.auth.signInWithPassword({
+              email: submittedEmail,
+              password: submittedPassword
+            });
+
+            if (!authError && authData.user) {
+              const userProfile = await db.getUserByEmail(submittedEmail);
+              onLogin(userProfile || {
+                id: authData.user.id,
+                name: 'Store Owner',
+                email: submittedEmail,
+                role: 'ADMIN',
+                hometown: 'Nairobi'
+              });
+              setIsLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.warn("Supabase auth failed during admin bypass, proceeding with local session", e);
+          }
+
+          // If Supabase fails but credentials are correct, log in as local admin
+          onLogin({
+            id: 'local-admin',
+            name: 'Store Owner',
+            email: submittedEmail,
+            role: 'ADMIN',
+            hometown: 'Nairobi'
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Login via Supabase Auth (Normal Flow)
         const { data: authData, error: authError } = await db.supabase.auth.signInWithPassword({
           email: submittedEmail,
           password: submittedPassword

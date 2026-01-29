@@ -153,7 +153,8 @@ const App: React.FC = () => {
           });
         }
       } else {
-        setUser(null);
+        // Only clear user if it's not our local bypass admin
+        setUser(prev => prev?.id === 'local-admin' ? prev : null);
       }
     });
 
