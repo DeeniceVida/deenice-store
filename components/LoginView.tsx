@@ -47,61 +47,62 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       const submittedEmail = email.trim().toLowerCase();
       const submittedPassword = password.trim();
 
-      // Admin check
-      const isAdmin = submittedEmail === ADMIN_EMAIL.toLowerCase() && submittedPassword === ADMIN_PASSWORD;
-
-      if (isAdmin) {
-        onLogin({
-          id: 'admin',
-          name: 'Admin',
-          email: ADMIN_EMAIL,
-          role: 'ADMIN',
-          hometown: 'Warehouse'
-        });
-        return;
-      }
-
-      if (password.length < 4) {
-        setLoginError(true);
-        setTimeout(() => setLoginError(false), 2000);
-        return;
-      }
-
-      let userToLogin: User;
-
       if (isRegistering) {
-        userToLogin = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: name || 'User',
+        // Register via Supabase Auth
+        const { data: authData, error: authError } = await db.supabase.auth.signUp({
           email: submittedEmail,
-          role: 'USER',
-          hometown: hometown || 'Westlands'
-        };
-        // Sync registration to Database
-        await db.upsertUser(userToLogin);
-      } else {
-        // Find existing user in sync
-        const existingUser = await db.getUserByEmail(submittedEmail);
-        if (existingUser) {
-          userToLogin = existingUser;
-        } else {
-          // If not in DB but trying to login, we'll create a dummy session or reject
-          // For this app, let's treat any valid email/pass as a new user if not found
-          userToLogin = {
-            id: Math.random().toString(36).substr(2, 9),
-            name: 'Member',
+          password: submittedPassword,
+          options: {
+            data: {
+              full_name: name,
+              hometown: hometown
+            }
+          }
+        });
+
+        if (authError) throw authError;
+
+        if (authData.user) {
+          const newUser: User = {
+            id: authData.user.id,
+            name: name || 'User',
             email: submittedEmail,
-            role: 'USER',
-            hometown: 'Westlands'
+            role: 'USER', // Default role. Admin status should be handled via database roles/claims.
+            hometown: hometown || 'Westlands'
           };
-          await db.upsertUser(userToLogin);
+          await db.upsertUser(newUser);
+          onLogin(newUser);
+        }
+      } else {
+        // Login via Supabase Auth
+        const { data: authData, error: authError } = await db.supabase.auth.signInWithPassword({
+          email: submittedEmail,
+          password: submittedPassword
+        });
+
+        if (authError) throw authError;
+
+        if (authData.user) {
+          const userProfile = await db.getUserByEmail(submittedEmail);
+          if (userProfile) {
+            onLogin(userProfile);
+          } else {
+            // Fallback user object if profile not found
+            const fallbackUser: User = {
+              id: authData.user.id,
+              name: authData.user.user_metadata?.full_name || 'Member',
+              email: submittedEmail,
+              role: submittedEmail === ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
+              hometown: authData.user.user_metadata?.hometown || 'Westlands'
+            };
+            onLogin(fallbackUser);
+          }
         }
       }
-
-      onLogin(userToLogin);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Auth Error:', err);
       setLoginError(true);
+      // Optional: show specific error message to user
     } finally {
       setIsLoading(false);
     }

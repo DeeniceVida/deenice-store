@@ -3,7 +3,7 @@ import { Bot, User, Sparkles, ArrowRight, MessageCircle, RefreshCw } from 'lucid
 import { Product } from '../types';
 import { MOCK_PRODUCTS, WHATSAPP_NUMBER } from '../constants';
 import { useNavigate } from 'react-router-dom';
-import { getSmartRecommendations } from '../services/deepseek';
+import { getSmartRecommendations } from '../services/gemini';
 
 interface Message {
     id: string;
@@ -163,7 +163,7 @@ const AIProductMatch: React.FC = () => {
                         </div>
                         <div>
                             <h1 className="font-black text-xl tracking-tight">Deenice <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">AI Genius</span></h1>
-                            <p className="text-xs text-gray-400 font-medium">Powered by DeepSeek • Personal Shopper</p>
+                            <p className="text-xs text-gray-400 font-medium">Powered by Gemini • Personal Shopper</p>
                         </div>
                     </div>
                     <button onClick={reset} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors" title="Restart Chat">

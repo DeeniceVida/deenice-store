@@ -27,6 +27,15 @@ export const upsertProduct = async (product: Product) => {
     return data[0];
 };
 
+export const deleteProduct = async (id: string) => {
+    const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
 // --- Categories ---
 export const getCategories = async (): Promise<any[]> => {
     const { data, error } = await supabase

@@ -31,7 +31,7 @@ export const getTownSuggestions = async (input: string): Promise<string[]> => {
 };
 
 export const getSmartRecommendations = async (
-    userPrefs: { budget: string; usage: string; category: string; vibe: string },
+    userPrefs: { budget: string; usage: string; category: string; vibe: string; brand: string },
     products: Product[]
 ): Promise<string[]> => {
     if (!API_KEY) {
@@ -50,6 +50,7 @@ export const getSmartRecommendations = async (
       - Main Usage: ${userPrefs.usage}
       - Vibe/Style: ${userPrefs.vibe}
       - Category Interest: ${userPrefs.category}
+      - Specific Brand: ${userPrefs.brand}
 
       Available Inventory (JSON):
       ${JSON.stringify(products.map(p => ({ id: p.id, name: p.name, price: p.price, desc: p.description, cat: p.category })))}

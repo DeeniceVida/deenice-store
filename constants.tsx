@@ -4,15 +4,15 @@ import { Product, Review, BlogArticle, OrderStatus, PaymentStatus } from './type
 
 export const STORE_NAME = "Deenice.store";
 export const STORE_EMAIL = "deenicevida@gmail.com";
-export const WHATSAPP_NUMBER = "+254791873538";
+export const WHATSAPP_NUMBER = "+254106590617";
 export const MPESA_TILL_NUMBER = "8537538";
 export const USD_TO_KES_RATE = 135;
 export const LOGO_URL = "/assets/logo-full.png";
 export const LOGO_ICON_URL = "/assets/logo-icon.png";
 
-// Admin Credentials
-export const ADMIN_EMAIL = "deenicevida@gmail.com";
-export const ADMIN_PASSWORD = "dmcxstn7"; // Highly recommended to change this after first login
+// Admin Credentials (managed via environment variables)
+export const ADMIN_EMAIL = (import.meta as any).env.VITE_ADMIN_EMAIL || "";
+export const ADMIN_PASSWORD = (import.meta as any).env.VITE_ADMIN_PASSWORD || "";
 
 export const SOCIAL_LINKS = {
   tiktok: "https://www.tiktok.com/@deenicepcs",

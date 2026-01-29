@@ -40,6 +40,7 @@ interface AdminDashboardProps {
    onUpdateOfferStatus: (id: string, status: 'PENDING' | 'ACCEPTED' | 'REJECTED') => void;
    onAddProduct: (product: Product) => void;
    onUpdateProduct: (product: Product) => void;
+   onDeleteProduct: (id: string) => void;
    offers: Offer[];
    adminName: string;
    adminAvatar: string;
@@ -58,6 +59,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    onUpdatePaymentStatus,
    onAddProduct,
    onUpdateProduct,
+   onDeleteProduct,
    onUpdateDeals,
    onDeleteDeal,
    onUpdateGadgetStatus,
@@ -204,6 +206,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
    const handleEditProduct = (product: Product) => {
       setNewProduct(product);
       setEditingProductId(product.id);
+      setShowProductForm(true);
+   };
+
+   const handleDuplicateProduct = (product: Product) => {
+      setNewProduct({
+         ...product,
+         id: '', // Blank ID for new product
+         name: `${product.name} (Copy)`,
+         salesCount: 0,
+      });
+      setEditingProductId(null); // Ensure it's treated as a new product
       setShowProductForm(true);
    };
 
@@ -601,9 +614,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <span style={{ fontSize: '0.75rem', opacity: 0.4 }}>•</span>
                               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: p.stock < 5 ? '#ef4444' : '#64748b' }}>Stock: {p.stock}</span>
                            </div>
-                           <button onClick={() => handleEditProduct(p)} style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#000', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' }}>
-                              <Edit2 size={12} /> EDIT GEAR
-                           </button>
+                           <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <button onClick={() => handleEditProduct(p)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#000', color: '#fff', border: 'none', padding: '0.5rem', borderRadius: '8px', fontSize: '0.625rem', fontWeight: 900, cursor: 'pointer' }}>
+                                 <Edit2 size={12} /> EDIT
+                              </button>
+                              <button onClick={() => handleDuplicateProduct(p)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#E3F77E', color: '#000', border: '1.5px solid #000', padding: '0.5rem', borderRadius: '8px', fontSize: '0.625rem', fontWeight: 900, cursor: 'pointer' }}>
+                                 <Plus size={12} /> DUP
+                              </button>
+                              <button onClick={() => onDeleteProduct(p.id)} style={{ padding: '0.5rem', borderRadius: '8px', border: '1.5px solid #000', background: '#FEF2F2', color: '#ef4444', cursor: 'pointer' }}>
+                                 <Trash2 size={14} />
+                              </button>
+                           </div>
                         </div>
                      </div>
                   ))}
@@ -1142,13 +1163,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                            </select>
                         </div>
-                     </div>
-
-                     <div>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' }}>
-                           <input type="checkbox" checked={newProduct.isHidden || false} onChange={e => setNewProduct({ ...newProduct, isHidden: e.target.checked })} style={{ width: '1.25rem', height: '1.25rem' }} />
-                           HIDDEN PRODUCT (Flash Sale Exclusive)
-                        </label>
                      </div>
 
                      <div>

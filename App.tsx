@@ -42,10 +42,7 @@ const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isBuyCoffeeOpen, setIsBuyCoffeeOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('deenice_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuLinkStyle = {
     display: 'flex',
@@ -136,14 +133,34 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pathname]);
 
-  // Persist user session
+  // Supabase Auth listener
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('deenice_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('deenice_user');
-    }
-  }, [user]);
+    // Listen for auth state changes
+    const { data: { subscription } } = db.supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        // Try to get profile from database
+        const profile = await db.getUserByEmail(session.user.email!);
+        if (profile) {
+          setUser(profile);
+        } else {
+          // Fallback user object
+          setUser({
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || 'Member',
+            email: session.user.email!,
+            role: session.user.email === ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
+            hometown: session.user.user_metadata?.hometown || 'Westlands'
+          });
+        }
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleUpdateAdminProfile = async (name: string, avatar: string) => {
     try {
@@ -279,6 +296,17 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      if (window.confirm('Are you sure you want to delete this product?')) {
+        await db.deleteProduct(id);
+        setProducts(prev => prev.filter(p => p.id !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting product:', err);
+    }
+  };
+
   const [gadgets, setGadgets] = useState<GadgetListing[]>([]);
 
   const handleSellGadget = async (listingData: Omit<GadgetListing, 'id' | 'createdAt' | 'sellerId' | 'sellerName' | 'status'>) => {
@@ -410,7 +438,8 @@ const App: React.FC = () => {
 
           {user && (
             <button
-              onClick={() => {
+              onClick={async () => {
+                await db.supabase.auth.signOut();
                 setUser(null);
                 window.location.hash = '#/';
               }}
@@ -486,6 +515,7 @@ const App: React.FC = () => {
                 onUpdatePaymentStatus={handleUpdatePaymentStatus}
                 onAddProduct={handleAddProduct}
                 onUpdateProduct={handleUpdateProduct}
+                onDeleteProduct={handleDeleteProduct}
                 onUpdateDeals={handleUpdateDeals}
                 onDeleteDeal={handleDeleteDeal}
                 onUpdateGadgetStatus={handleUpdateGadgetStatus}
