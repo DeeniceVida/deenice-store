@@ -141,7 +141,10 @@ const App: React.FC = () => {
         // Try to get profile from database
         const profile = await db.getUserByEmail(session.user.email!);
         if (profile) {
-          setUser(profile);
+          setUser({
+            ...profile,
+            role: (session.user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'ADMIN' : profile.role
+          });
         } else {
           // Fallback user object
           setUser({
