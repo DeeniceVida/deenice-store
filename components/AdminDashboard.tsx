@@ -1327,6 +1327,98 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                </div>
             )
          }
+          {/* Product Form Modal */}
+          {showProductForm && (
+             <div className="admin-modal-overlay">
+                <div className="admin-modal-backdrop" onClick={() => setShowProductForm(false)} />
+                <div className="admin-modal-content" style={{ maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                      <h2 style={{ fontSize: '2rem', fontWeight: 900 }}>{editingProductId ? 'Edit Product' : 'New Product'}</h2>
+                      <button onClick={() => setShowProductForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }}>
+                         <X size={24} />
+                      </button>
+                   </div>
+
+                   <form onSubmit={handleProductSubmit}>
+                      <div style={{ display: 'grid', gap: '2rem' }}>
+                         <div>
+                            <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Product Name</label>
+                            <input required type="text" placeholder="e.g. iPhone 15 Pro Max" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none' }} value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
+                         </div>
+
+                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div>
+                               <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Price (KES)</label>
+                               <input required type="number" placeholder="50000" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none' }} value={newProduct.price || ''} onChange={e => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })} />
+                            </div>
+                            <div>
+                               <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Stock</label>
+                               <input required type="number" placeholder="10" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none' }} value={newProduct.stock || ''} onChange={e => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) })} />
+                            </div>
+                         </div>
+
+                         <div>
+                            <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Category</label>
+                            <select required style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none' }} value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}>
+                               <option value="">-- Select Category --</option>
+                               {categories.map(cat => (
+                                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                               ))}
+                            </select>
+                         </div>
+
+                         <div>
+                            <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Images (URLs)</label>
+                            {(newProduct.images || ['']).map((img, i) => (
+                               <input key={i} type="url" placeholder="https://..." style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none', marginBottom: '0.5rem' }} value={img} onChange={e => { const imgs = [...(newProduct.images || [''])]; imgs[i] = e.target.value; setNewProduct({ ...newProduct, images: imgs }); }} />
+                            ))}
+                            <button type="button" onClick={() => setNewProduct({ ...newProduct, images: [...(newProduct.images || ['']), ''] })} style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1.5px solid #000', background: 'transparent', fontWeight: 900, cursor: 'pointer', fontSize: '0.75rem' }}>+ Add Image URL</button>
+                         </div>
+
+                         <div>
+                            <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Colors (comma separated)</label>
+                            <input type="text" placeholder="Black, White, Blue" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none' }} value={(newProduct.colors || []).join(', ')} onChange={e => setNewProduct({ ...newProduct, colors: e.target.value.split(',').map(c => c.trim()) })} />
+                         </div>
+
+                         <div>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' }}>
+                               <input type="checkbox" checked={newProduct.isHidden || false} onChange={e => setNewProduct({ ...newProduct, isHidden: e.target.checked })} style={{ width: '1.25rem', height: '1.25rem' }} />
+                               HIDDEN PRODUCT (Flash Sale Exclusive)
+                            </label>
+                         </div>
+
+                         <div>
+                            <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Product Narrative</label>
+                            <textarea required placeholder="Detailed premium description..." rows={4} style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', border: '1.5px solid #000', fontWeight: 700, outline: 'none', resize: 'none' }} value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
+                         </div>
+
+                         <div>
+                            <label style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Variations (Optional)</label>
+                            {(newProduct.variations || []).map((v, i) => (
+                               <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                  <select style={{ padding: '0.75rem', borderRadius: '8px', border: '1.5px solid #000', fontWeight: 700 }} value={v.type} onChange={e => { const vars = [...(newProduct.variations || [])]; vars[i].type = e.target.value as any; setNewProduct({ ...newProduct, variations: vars }); }}>
+                                     <option value="Size">Size</option>
+                                     <option value="Color">Color</option>
+                                     <option value="Design">Design</option>
+                                     <option value="Bundle">Bundle</option>
+                                  </select>
+                                  <input type="text" placeholder="Value" style={{ padding: '0.75rem', borderRadius: '8px', border: '1.5px solid #000', fontWeight: 700 }} value={v.value} onChange={e => { const vars = [...(newProduct.variations || [])]; vars[i].value = e.target.value; setNewProduct({ ...newProduct, variations: vars }); }} />
+                                  <input type="number" placeholder="Price" style={{ padding: '0.75rem', borderRadius: '8px', border: '1.5px solid #000', fontWeight: 700 }} value={v.price || ''} onChange={e => { const vars = [...(newProduct.variations || [])]; vars[i].price = parseFloat(e.target.value); setNewProduct({ ...newProduct, variations: vars }); }} />
+                                  <button type="button" onClick={() => setNewProduct({ ...newProduct, variations: (newProduct.variations || []).filter((_, idx) => idx !== i) })} style={{ padding: '0.75rem', borderRadius: '8px', border: '1.5px solid #000', background: '#FEF2F2', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                               </div>
+                            ))}
+                            <button type="button" onClick={addVariationField} style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1.5px solid #000', background: 'transparent', fontWeight: 900, cursor: 'pointer', fontSize: '0.75rem' }}>+ Add Variation</button>
+                         </div>
+
+                         <button type="submit" style={{ width: '100%', padding: '1.25rem', borderRadius: '12px', background: '#E3F77E', color: '#000', fontWeight: 900, border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {editingProductId ? 'UPDATE PRODUCT' : 'CREATE PRODUCT'}
+                         </button>
+                      </div>
+                   </form>
+                </div>
+             </div>
+          )}
+
       </div >
    );
 };
