@@ -87,12 +87,14 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
             if (!authError && authData.user) {
               const userProfile = await db.getUserByEmail(submittedEmail);
-              onLogin(userProfile || {
-                id: authData.user.id,
-                name: 'Store Owner',
-                email: submittedEmail,
-                role: 'ADMIN',
-                hometown: 'Nairobi'
+              onLogin({
+                ...(userProfile || {
+                  id: authData.user.id,
+                  name: authData.user.user_metadata?.full_name || 'Store Owner',
+                  email: submittedEmail,
+                  hometown: authData.user.user_metadata?.hometown || 'Nairobi'
+                }),
+                role: 'ADMIN'
               });
               setIsLoading(false);
               return;
