@@ -35,7 +35,7 @@ import ProductDetailsPage from './components/ProductDetailsPage';
 import { CartItem, Product, ProductVariation, User, Order, OrderStatus, PaymentStatus, Deal, GadgetListing, Offer } from './types';
 
 
-import { STORE_NAME, WHATSAPP_NUMBER, SOCIAL_LINKS, STORE_EMAIL, LOGO_URL, LOGO_ICON_URL, ADMIN_EMAIL } from './constants';
+import { STORE_NAME, WHATSAPP_NUMBER, SOCIAL_LINKS, STORE_EMAIL, LOGO_URL, LOGO_ICON_URL, ADMIN_EMAIL, MOCK_PRODUCTS } from './constants';
 import * as db from './services/supabase';
 
 const App: React.FC = () => {
@@ -77,12 +77,17 @@ const App: React.FC = () => {
           db.getCategories()
         ]);
 
-        if (results[0].status === 'fulfilled') setProducts(results[0].value);
-        else console.error('Error fetching products:', results[0].reason);
+        if (results[0].status === 'fulfilled' && results[0].value && results[0].value.length > 0) {
+          setProducts(results[0].value);
+        } else {
+          console.warn('Supabase products fetch failed or empty, falling back to MOCK_PRODUCTS');
+          setProducts(MOCK_PRODUCTS);
+        }
 
         if (results[1].status === 'fulfilled') setOrders(results[1].value);
         else console.error('Error fetching orders:', results[1].reason);
 
+        // Fixed setGadgets instead of setGadgets (was correct but let's ensure consistency)
         if (results[2].status === 'fulfilled') setGadgets(results[2].value);
         else console.error('Error fetching gadgets:', results[2].reason);
 
@@ -156,8 +161,8 @@ const App: React.FC = () => {
           });
         }
       } else {
-        // Only clear user if it's not our local bypass admin
-        setUser(prev => prev?.id === 'local-admin' ? prev : null);
+        // Clear user on sign out
+        setUser(null);
       }
     });
 

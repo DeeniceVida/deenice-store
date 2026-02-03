@@ -43,6 +43,15 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     e.preventDefault();
     setIsLoading(true);
 
+    // Timeout safety net - reset loading if it takes too long
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        setLoginError(true);
+        console.warn('Auth request timed out');
+      }
+    }, 15000);
+
     try {
       const submittedEmail = email.trim().toLowerCase();
       const submittedPassword = password.trim();
@@ -67,55 +76,15 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             id: authData.user.id,
             name: name || 'User',
             email: submittedEmail,
-            role: 'USER', // Default role. Admin status should be handled via database roles/claims.
+            role: 'USER',
             hometown: hometown || 'Westlands'
           };
           await db.upsertUser(newUser);
           onLogin(newUser);
         }
       } else {
-        // --- HARDCODED ADMIN BYPASS ---
-        // If credentials match the constants exactly, we allow login even if Supabase has issues
-        if (submittedEmail === ADMIN_EMAIL.toLowerCase() && submittedPassword === ADMIN_PASSWORD && ADMIN_EMAIL !== "") {
-          console.log("Admin credentials matched. Checking Supabase Auth...");
-          // We still try to sign them in to Supabase for a session
-          try {
-            const { data: authData, error: authError } = await db.supabase.auth.signInWithPassword({
-              email: submittedEmail,
-              password: submittedPassword
-            });
-
-            if (!authError && authData.user) {
-              const userProfile = await db.getUserByEmail(submittedEmail);
-              onLogin({
-                ...(userProfile || {
-                  id: authData.user.id,
-                  name: authData.user.user_metadata?.full_name || 'Store Owner',
-                  email: submittedEmail,
-                  hometown: authData.user.user_metadata?.hometown || 'Nairobi'
-                }),
-                role: 'ADMIN'
-              });
-              setIsLoading(false);
-              return;
-            }
-          } catch (e) {
-            console.warn("Supabase auth failed during admin bypass, proceeding with local session", e);
-          }
-
-          // If Supabase fails but credentials are correct, log in as local admin
-          onLogin({
-            id: 'local-admin',
-            name: 'Store Owner',
-            email: submittedEmail,
-            role: 'ADMIN',
-            hometown: 'Nairobi'
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        // Login via Supabase Auth (Normal Flow)
+        // Login via Supabase Auth
+        console.log("Attempting standard login...");
         const { data: authData, error: authError } = await db.supabase.auth.signInWithPassword({
           email: submittedEmail,
           password: submittedPassword
@@ -125,10 +94,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
         if (authData.user) {
           const userProfile = await db.getUserByEmail(submittedEmail);
+
           if (userProfile) {
             onLogin(userProfile);
           } else {
-            // Fallback user object if profile not found
             const fallbackUser: User = {
               id: authData.user.id,
               name: authData.user.user_metadata?.full_name || 'Member',
@@ -136,7 +105,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               role: submittedEmail === ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
               hometown: authData.user.user_metadata?.hometown || 'Westlands'
             };
-            // Ensure this user exists in DB so RLS works
             await db.upsertUser(fallbackUser);
             onLogin(fallbackUser);
           }
@@ -145,8 +113,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     } catch (err: any) {
       console.error('Auth Error:', err);
       setLoginError(true);
-      // Optional: show specific error message to user
+      // Brief feedback toast would be nice here, but let's stick to the visual error state for now
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
