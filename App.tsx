@@ -147,47 +147,79 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pathname]);
 
-  // Supabase Auth listener
+  // Supabase Auth listener with corruption detection
   useEffect(() => {
+    let authErrorCount = 0;
+    const MAX_AUTH_ERRORS = 3;
+
     // Listen for auth state changes
     const { data: { subscription } } = db.supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event, 'Session:', session ? 'exists' : 'none');
+
       if (session?.user) {
-        // Try to get profile from database
-        const profile = await db.getUserByEmail(session.user.email!);
-        if (profile) {
-          setUser({
-            ...profile,
-            role: (session.user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'ADMIN' : profile.role
-          });
-        } else {
-          // Fallback user object
-          setUser({
-            id: session.user.id,
-            name: session.user.user_metadata?.full_name || 'Member',
-            email: session.user.email!,
-            role: session.user.email === ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
-            hometown: session.user.user_metadata?.hometown || 'Westlands'
-          });
+        try {
+          // Try to get profile from database
+          const profile = await db.getUserByEmail(session.user.email!);
+          if (profile) {
+            setUser({
+              ...profile,
+              role: (session.user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'ADMIN' : profile.role
+            });
+            authErrorCount = 0; // Reset error count on success
+          } else {
+            // Fallback user object
+            setUser({
+              id: session.user.id,
+              name: session.user.user_metadata?.full_name || 'Member',
+              email: session.user.email!,
+              role: session.user.email === ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
+              hometown: session.user.user_metadata?.hometown || 'Westlands'
+            });
+            authErrorCount = 0;
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          authErrorCount++;
+
+          // If we've had multiple auth errors, the session is likely corrupted
+          if (authErrorCount >= MAX_AUTH_ERRORS) {
+            console.warn('🔴 Detected corrupted session. Clearing and reloading...');
+            await db.supabase.auth.signOut();
+            localStorage.clear();
+            window.location.reload();
+          }
         }
       } else {
         // Clear user on sign out
         setUser(null);
+        authErrorCount = 0;
       }
     });
 
-    // Check for hanging session - if we have a token but no user after a while, something might be stuck
-    const sessionCheck = setTimeout(async () => {
-      const { data: { session } } = await db.supabase.auth.getSession();
-      if (session && !user) {
-        console.warn('Detected potentially hanging session without user profile. If this persists, try clearing browser cache.');
+    // Initial session check with corruption detection
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await db.supabase.auth.getSession();
+
+        if (error) {
+          console.error('Session check error:', error);
+          // Session is corrupted, clear it
+          console.warn('🔴 Corrupted session detected on load. Clearing...');
+          await db.supabase.auth.signOut();
+          localStorage.clear();
+        }
+      } catch (err) {
+        console.error('Fatal session error:', err);
+        localStorage.clear();
       }
-    }, 5000);
+    };
+
+    checkInitialSession();
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(sessionCheck);
     };
-  }, [user]); // Re-run check if user state stays null
+  }, []); // Only run once on mount
 
   const handleUpdateAdminProfile = async (name: string, avatar: string) => {
     try {

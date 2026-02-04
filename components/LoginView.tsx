@@ -85,6 +85,18 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       } else {
         // Login via Supabase Auth
         console.log("Attempting standard login...");
+
+        // First, check if there's a corrupted session blocking us
+        const { data: checkData } = await db.supabase.auth.getSession();
+        if (checkData.session && checkData.session.expires_at) {
+          const expiresAt = new Date(checkData.session.expires_at * 1000);
+          if (expiresAt < new Date()) {
+            console.warn('🔴 Expired session detected, clearing...');
+            await db.supabase.auth.signOut();
+            localStorage.clear();
+          }
+        }
+
         const { data: authData, error: authError } = await db.withTimeout(db.supabase.auth.signInWithPassword({
           email: submittedEmail,
           password: submittedPassword
@@ -122,6 +134,14 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       }
     } catch (err: any) {
       console.error('Auth Error:', err);
+
+      // If it's a session-related error, clear everything and prompt to try again
+      if (err.message && (err.message.includes('session') || err.message.includes('token') || err.message.includes('timed out'))) {
+        console.warn('🔴 Session/auth error detected. Clearing session...');
+        await db.supabase.auth.signOut();
+        localStorage.clear();
+      }
+
       setLoginError(true);
       // Brief feedback toast would be nice here, but let's stick to the visual error state for now
     } finally {
