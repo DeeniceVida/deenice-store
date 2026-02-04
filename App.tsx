@@ -63,11 +63,27 @@ const App: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [adminProfile, setAdminProfile] = useState({ adminName: 'Andriano Darwin', adminAvatar: 'https://i.pravatar.cc/150?u=admin' });
 
+  // Initialize with MOCK_PRODUCTS immediately for fast UI render
   useEffect(() => {
+    // Show mock products immediately
+    setProducts(MOCK_PRODUCTS);
+
+    const DEFAULT_CATEGORIES = [
+      { id: '1', name: 'Desk Setup' },
+      { id: '2', name: 'Lighting' },
+      { id: '3', name: 'Accessories' },
+      { id: '4', name: 'Streaming' },
+      { id: '5', name: 'Audio' },
+      { id: '6', name: 'Phones' },
+      { id: '7', name: 'Laptops' },
+      { id: '8', name: 'PC Parts' }
+    ];
+    setCategories(DEFAULT_CATEGORIES);
+
+    // Fetch real data in the background
     const fetchData = async () => {
       try {
-        // Use a timeout to ensure we don't hang forever
-        const results = await db.withTimeout(Promise.allSettled([
+        const results = await Promise.allSettled([
           db.getProducts(),
           db.getOrders(),
           db.getGadgetListings(),
@@ -76,19 +92,19 @@ const App: React.FC = () => {
           db.getDeals(),
           db.getUsers(),
           db.getCategories()
-        ]), 10000); // 10s timeout
+        ]);
 
+        // Only update products if we got real data from Supabase
         if (results[0].status === 'fulfilled' && results[0].value && results[0].value.length > 0) {
           setProducts(results[0].value);
+          console.log('Loaded', results[0].value.length, 'products from Supabase');
         } else {
-          console.warn('Supabase products fetch failed or empty, falling back to MOCK_PRODUCTS');
-          setProducts(MOCK_PRODUCTS);
+          console.log('Using MOCK_PRODUCTS (Supabase empty or failed)');
         }
 
         if (results[1].status === 'fulfilled') setOrders(results[1].value);
         else console.error('Error fetching orders:', results[1].reason);
 
-        // Fixed setGadgets instead of setGadgets (was correct but let's ensure consistency)
         if (results[2].status === 'fulfilled') setGadgets(results[2].value);
         else console.error('Error fetching gadgets:', results[2].reason);
 
@@ -113,24 +129,16 @@ const App: React.FC = () => {
         if (results[6].status === 'fulfilled') setUsers(results[6].value || []);
         else console.error('Error fetching users:', results[6].reason);
 
-        const DEFAULT_CATEGORIES = [
-          { id: '1', name: 'Desk Setup' },
-          { id: '2', name: 'Lighting' },
-          { id: '3', name: 'Accessories' },
-          { id: '4', name: 'Streaming' },
-          { id: '5', name: 'Audio' }
-        ];
-
         if (results[7].status === 'fulfilled' && results[7].value && results[7].value.length > 0) {
           setCategories(results[7].value);
-        } else {
-          setCategories(DEFAULT_CATEGORIES);
         }
 
       } catch (err) {
         console.error('Unexpected error fetching data:', err);
+        // Products already set to MOCK_PRODUCTS, so UI won't be empty
       }
     };
+
     fetchData();
   }, []);
 
