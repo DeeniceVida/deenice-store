@@ -58,7 +58,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
       if (isRegistering) {
         // Register via Supabase Auth
-        const { data: authData, error: authError } = await db.supabase.auth.signUp({
+        const { data: authData, error: authError } = await db.withTimeout(db.supabase.auth.signUp({
           email: submittedEmail,
           password: submittedPassword,
           options: {
@@ -67,7 +67,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               hometown: hometown
             }
           }
-        });
+        }), 12000); // 12s timeout for signup
 
         if (authError) throw authError;
 
@@ -79,21 +79,27 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             role: 'USER',
             hometown: hometown || 'Westlands'
           };
-          await db.upsertUser(newUser);
+          await db.withTimeout(db.upsertUser(newUser), 8000);
           onLogin(newUser);
         }
       } else {
         // Login via Supabase Auth
         console.log("Attempting standard login...");
-        const { data: authData, error: authError } = await db.supabase.auth.signInWithPassword({
+        const { data: authData, error: authError } = await db.withTimeout(db.supabase.auth.signInWithPassword({
           email: submittedEmail,
           password: submittedPassword
-        });
+        }), 10000); // 10s timeout for login
 
         if (authError) throw authError;
 
         if (authData.user) {
-          const userProfile = await db.getUserByEmail(submittedEmail);
+          // Profile fetch with timeout
+          let userProfile = null;
+          try {
+            userProfile = await db.withTimeout(db.getUserByEmail(submittedEmail), 5000);
+          } catch (profileErr) {
+            console.warn('Profile fetch timed out, using fallback');
+          }
 
           if (userProfile) {
             onLogin(userProfile);
@@ -105,7 +111,11 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               role: submittedEmail === ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
               hometown: authData.user.user_metadata?.hometown || 'Westlands'
             };
-            await db.upsertUser(fallbackUser);
+            try {
+              await db.withTimeout(db.upsertUser(fallbackUser), 5000);
+            } catch (e) {
+              console.error('Fallback user upsert failed:', e);
+            }
             onLogin(fallbackUser);
           }
         }

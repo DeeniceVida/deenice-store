@@ -6,6 +6,32 @@ const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+/**
+ * Helper to wrap a promise with a timeout
+ */
+export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> {
+    return Promise.race([
+        promise,
+        new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Request timed out')), timeoutMs)
+        )
+    ]);
+}
+
+/**
+ * Completely clears the Supabase session from local storage
+ * This is useful if the session state is corrupted and causing hangs
+ */
+export const clearSession = async () => {
+    try {
+        await supabase.auth.signOut();
+        localStorage.removeItem('supabase.auth.token'); // Fallback manual clear
+        window.location.reload();
+    } catch (e) {
+        console.error('Error clearing session:', e);
+    }
+};
+
 // --- Products ---
 export const getProducts = async (): Promise<Product[]> => {
     const { data, error } = await supabase

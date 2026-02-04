@@ -66,7 +66,8 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const results = await Promise.allSettled([
+        // Use a timeout to ensure we don't hang forever
+        const results = await db.withTimeout(Promise.allSettled([
           db.getProducts(),
           db.getOrders(),
           db.getGadgetListings(),
@@ -75,7 +76,7 @@ const App: React.FC = () => {
           db.getDeals(),
           db.getUsers(),
           db.getCategories()
-        ]);
+        ]), 10000); // 10s timeout
 
         if (results[0].status === 'fulfilled' && results[0].value && results[0].value.length > 0) {
           setProducts(results[0].value);
@@ -166,10 +167,19 @@ const App: React.FC = () => {
       }
     });
 
+    // Check for hanging session - if we have a token but no user after a while, something might be stuck
+    const sessionCheck = setTimeout(async () => {
+      const { data: { session } } = await db.supabase.auth.getSession();
+      if (session && !user) {
+        console.warn('Detected potentially hanging session without user profile. If this persists, try clearing browser cache.');
+      }
+    }, 5000);
+
     return () => {
       subscription.unsubscribe();
+      clearTimeout(sessionCheck);
     };
-  }, []);
+  }, [user]); // Re-run check if user state stays null
 
   const handleUpdateAdminProfile = async (name: string, avatar: string) => {
     try {
