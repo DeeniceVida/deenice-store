@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Deenice Store</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #1a1c23;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .emoji {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="emoji">🔧</div>
+        <h1>Clear All Browser Data</h1>
+        <p>Click the button below to completely reset your browser's cached data for Deenice Store. This will fix any
+            login or product loading issues.</p>
+        <button onclick="resetEverything()">🗑️ Clear & Refresh</button>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        function resetEverything() {
+            const btn = document.querySelector('button');
+            const status = document.getElementById('status');
+
+            btn.textContent = '🔄 Clearing...';
+            btn.disabled = true;
+
+            try {
+                // Clear ALL storage types
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // Clear all cookies for this domain
+                document.cookie.split(";").forEach(function (c) {
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+
+                // Clear IndexedDB if exists
+                if (window.indexedDB) {
+                    indexedDB.databases().then(dbs => {
+                        dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+                    }).catch(() => { });
+                }
+
+                // Clear Service Worker cache
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(reg => reg.unregister());
+                    });
+                }
+
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => caches.delete(name));
+                    });
+                }
+
+                status.className = 'status success';
+                status.textContent = '✅ Everything cleared! Redirecting...';
+
+                // Redirect to home after 1.5 seconds
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+
+            } catch (error) {
+                status.className = 'status';
+                status.style.display = 'block';
+                status.style.background = '#f8d7da';
+                status.style.color = '#721c24';
+                status.textContent = '⚠️ Error: ' + error.message;
+                btn.disabled = false;
+                btn.textContent = '🗑️ Try Again';
+            }
+        }
+
+        // Auto-clear on page load as well
+        console.log('🔴 RESET PAGE: This page will clear all cached data');
+    </script>
+</body>
+
+</html>
