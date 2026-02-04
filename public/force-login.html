@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Admin Login - Deenice Store</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            margin-top: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+
+        .emoji {
+            font-size: 60px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="emoji">🔐</div>
+        <h1>Force Admin Login</h1>
+        <p>This page bypasses browser cache to log you in fresh</p>
+
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="email" value="deenicevida@gmail.com">
+        </div>
+
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" value="dmcxstn7">
+        </div>
+
+        <button onclick="forceLogin()" id="loginBtn">🚀 Force Login</button>
+
+        <div class="status" id="status"></div>
+
+        <div class="note">
+            💡 <strong>This page will:</strong><br>
+            1. Clear ALL browser storage<br>
+            2. Force a fresh Supabase login<br>
+            3. Redirect you to admin dashboard
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://bahgezvofvukyqhvhfag.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhaGdlenZvZnZ1a3lxaHZoZmFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0ODAwNjAsImV4cCI6MjA4NDA1NjA2MH0.NvjWKJs1mpWsn9PjTVZaYghABqy5gqdjJ2j5HDiXs2U';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function forceLogin() {
+            const btn = document.getElementById('loginBtn');
+            const status = document.getElementById('status');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            btn.textContent = '🔄 Clearing cache...';
+            btn.disabled = true;
+
+            try {
+                // NUCLEAR CLEAR - Remove EVERYTHING
+                console.log('🗑️ Clearing ALL storage...');
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // Clear cookies
+                document.cookie.split(";").forEach(function (c) {
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+
+                status.className = 'status info';
+                status.textContent = '✅ Cache cleared, signing out old sessions...';
+
+                // Sign out any existing session
+                await supabase.auth.signOut();
+
+                btn.textContent = '🔑 Logging in...';
+                status.textContent = '🔑 Attempting fresh login...';
+
+                // Wait a bit to ensure everything is cleared
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Fresh login attempt
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email.trim().toLowerCase(),
+                    password: password
+                });
+
+                if (error) {
+                    throw new Error(error.message);
+                }
+
+                status.className = 'status success';
+                status.textContent = '🎉 Login SUCCESS! Redirecting to admin dashboard...';
+
+                console.log('✅ Logged in as:', data.user.email);
+
+                // Store the session
+                localStorage.setItem('supabase.auth.token', JSON.stringify(data.session));
+
+                // Redirect to home (which should detect admin and show dashboard)
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+
+            } catch (error) {
+                console.error('Login error:', error);
+                status.className = 'status error';
+                status.innerHTML = `❌ Login failed: ${error.message}<br><br>Check console for details`;
+                btn.disabled = false;
+                btn.textContent = '🔄 Try Again';
+            }
+        }
+
+        // Auto-clear on load
+        console.log('🔴 FORCE LOGIN PAGE: Ready to force fresh login');
+    </script>
+</body>
+
+</html>
